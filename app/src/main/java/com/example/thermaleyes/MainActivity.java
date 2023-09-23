@@ -7,6 +7,7 @@ import android.Manifest;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.hardware.usb.UsbDevice;
+import android.hardware.usb.UsbManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -21,6 +22,7 @@ import com.serenegiant.usb.Size;
 import com.serenegiant.usb.UVCCamera;
 import com.serenegiant.widget.AspectRatioSurfaceView;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,8 +54,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
                     initViews();
                 });
-    }
 
+        UsbManager usbManager = (UsbManager)getSystemService(USB_SERVICE);
+        ThermalDevice mThermalDevice = new ThermalDevice(usbManager);
+        try {
+            mThermalDevice.connect();
+        } catch (IOException e) {
+            Log.e(TAG, "Usb connect failed\n");
+        }
+    }
 
     private void initViews() {
         mCameraViewMain = findViewById(R.id.svCameraViewMain);
