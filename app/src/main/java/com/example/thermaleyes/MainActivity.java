@@ -23,6 +23,7 @@ import com.serenegiant.usb.UVCCamera;
 import com.serenegiant.widget.AspectRatioSurfaceView;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,11 +57,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 });
 
         UsbManager usbManager = (UsbManager)getSystemService(USB_SERVICE);
-        ThermalDevice mThermalDevice = new ThermalDevice(usbManager);
+        ThermalDevice mThermalDevice = new ThermalDevice(usbManager) {
+            @Override
+            public void onFrame(ByteBuffer frame) {
+                Log.e(TAG, "Get frame");
+            }
+        };
         try {
             mThermalDevice.connect();
         } catch (IOException e) {
-            Log.e(TAG, "Usb connect failed\n");
+            Log.e(TAG, "Usb connect failed");
         }
     }
 
