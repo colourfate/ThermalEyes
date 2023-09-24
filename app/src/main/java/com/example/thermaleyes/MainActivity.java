@@ -1,13 +1,16 @@
 package com.example.thermaleyes;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.Manifest;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -38,6 +41,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private AspectRatioSurfaceView mCameraViewMain;
     private ImageView mFrameCallbackPreview;
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,7 +64,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         ThermalDevice mThermalDevice = new ThermalDevice(usbManager) {
             @Override
             public void onFrame(ByteBuffer frame) {
-                Log.e(TAG, "Get frame");
+                Log.i(TAG, "Get temperature RGB frame");
+
+                int[] argb = new int[frame.remaining() / 3];
+                for (int i = 0; i < argb.length; i++) {
+                    int red = frame.get();
+                    int green = frame.get();
+                    int blue = frame.get();
+
+                    argb[i] = Color.argb(255, red, green, blue);
+                }
+
+                Bitmap originBm = Bitmap.createBitmap(
+                        ThermalDevice.IMAGE_WIDTH, ThermalDevice.IMAGE_HEIGHT,
+                        Bitmap.Config.ARGB_8888);
+                originBm.setPixels(argb, 0, ThermalDevice.IMAGE_WIDTH,
+                        0, 0, ThermalDevice.IMAGE_WIDTH,  ThermalDevice.IMAGE_HEIGHT);
+                Matrix matrix = new Matrix();
+                matrix.postScale(20, 20);   /* Scale to 640x480 */
+                Bitmap scaleBm = Bitmap.createBitmap(originBm,
+                        0, 0, originBm.getWidth(), originBm.getHeight(), matrix, true);
+
+                runOnUiThread(() -> {
+                    mFrameCallbackPreview.setImageBitmap(scaleBm);
+                });
             }
         };
         try {

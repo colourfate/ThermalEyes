@@ -18,36 +18,33 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 
+@RequiresApi(api = Build.VERSION_CODES.O)
 public abstract class ThermalDevice {
+    public final static int IMAGE_WIDTH = 32;
+    public final static int IMAGE_HEIGHT = 24;
+
     private final static String TAG = ThermalDevice.class.getSimpleName();
     private final static int VENDOR_ID = 1155;
     private final static int PRODUCT_ID = 22336;
-    private final static int IMAGE_WIDTH = 32;
-    private final static int IMAGE_HEIGHT = 24;
     private final static int IMAGE_PIXEL = IMAGE_WIDTH * IMAGE_HEIGHT;
     private final static int DATA_LEN = IMAGE_PIXEL * 2 + 2;
     private final UsbManager myUsbManager;
-    private ThermalCallback mThermalCallback = null;
     private final UsbSerialInterface.UsbReadCallback mCallback =
-            new UsbSerialInterface.UsbReadCallback() {
-        @RequiresApi(api = Build.VERSION_CODES.O)
-        @Override
-        public void onReceivedData(byte[] arg0) {
-            Log.i(TAG, "Get data from device");
+            arg0 -> {
+                Log.i(TAG, "Get data from device");
 
-            if (arg0.length != DATA_LEN ||
-                    arg0[arg0.length - 2] != -128 || arg0[arg0.length - 1] != 0) {
-                Log.e(TAG, "Receive invalid data, len: " + arg0.length + " EOF: " +
-                        Integer.toHexString(arg0[arg0.length - 2]) + ", " +
-                        Integer.toHexString(arg0[arg0.length - 1]));
-                return;
-            }
+                if (arg0.length != DATA_LEN ||
+                        arg0[arg0.length - 2] != -128 || arg0[arg0.length - 1] != 0) {
+                    Log.e(TAG, "Receive invalid data, len: " + arg0.length + " EOF: " +
+                            Integer.toHexString(arg0[arg0.length - 2]) + ", " +
+                            Integer.toHexString(arg0[arg0.length - 1]));
+                    return;
+                }
 
-            float[] tempData = getTemperatureData(arg0);
-            ByteBuffer tempImage = getTemperatureImage(tempData);
-            onFrame(tempImage);
-        }
-    };
+                float[] tempData = getTemperatureData(arg0);
+                ByteBuffer tempImage = getTemperatureImage(tempData);
+                onFrame(tempImage);
+            };
 
     public ThermalDevice(UsbManager usbManager) {
         this.myUsbManager = usbManager;
@@ -151,6 +148,7 @@ public abstract class ThermalDevice {
         }
         Log.e(TAG, "Max: " + maxTemp + " Min: " + minTemp);
 
+        buffer.position(0);
         return buffer;
     }
 }
