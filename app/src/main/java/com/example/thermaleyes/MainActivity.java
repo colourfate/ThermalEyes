@@ -31,7 +31,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
-    private static final boolean DEBUG = true;
+    private static final boolean CAM_DISPLAY = true;
+    private static final boolean TEMP_DISPLAY = true;
     private static final String TAG = MainActivity.class.getSimpleName();
 
     private static final int DEFAULT_WIDTH = 640;
@@ -40,6 +41,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private ICameraHelper mCameraHelper;
     private AspectRatioSurfaceView mCameraViewMain;
     private ImageView mFrameCallbackPreview;
+    private ImageView mThermalCameraPreview;
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
@@ -60,6 +62,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     initViews();
                 });
 
+        /*
         UsbManager usbManager = (UsbManager)getSystemService(USB_SERVICE);
         ThermalDevice mThermalDevice = new ThermalDevice(usbManager) {
             @Override
@@ -81,20 +84,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 originBm.setPixels(argb, 0, ThermalDevice.IMAGE_WIDTH,
                         0, 0, ThermalDevice.IMAGE_WIDTH,  ThermalDevice.IMAGE_HEIGHT);
                 Matrix matrix = new Matrix();
-                matrix.postScale(20, 20);   /* Scale to 640x480 */
+                matrix.postScale(20, 20);   // Scale to 640x480
                 Bitmap scaleBm = Bitmap.createBitmap(originBm,
                         0, 0, originBm.getWidth(), originBm.getHeight(), matrix, true);
 
-                runOnUiThread(() -> {
-                    mFrameCallbackPreview.setImageBitmap(scaleBm);
-                });
+                if (TEMP_DISPLAY) {
+                    runOnUiThread(() -> {
+                        mThermalCameraPreview.setImageBitmap(scaleBm);
+                    });
+                }
             }
         };
+
         try {
             mThermalDevice.connect();
         } catch (IOException e) {
             Log.e(TAG, "Usb connect failed");
         }
+
+         */
     }
 
     private void initViews() {
@@ -122,6 +130,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
         mFrameCallbackPreview = findViewById(R.id.ivFrameCallbackPreview);
+        mThermalCameraPreview = findViewById(R.id.ivThermalCameraPreview);
 
         Button btnOpenCamera = findViewById(R.id.btnOpenCamera);
         btnOpenCamera.setOnClickListener(this);
@@ -142,7 +151,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     public void initCameraHelper() {
-        if (DEBUG) Log.d(TAG, "initCameraHelper:");
+        if (CAM_DISPLAY) Log.d(TAG, "initCameraHelper:");
         if (mCameraHelper == null) {
             mCameraHelper = new CameraHelper();
             mCameraHelper.setStateCallback(mStateListener);
@@ -150,7 +159,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void clearCameraHelper() {
-        if (DEBUG) Log.d(TAG, "clearCameraHelper:");
+        if (CAM_DISPLAY) Log.d(TAG, "clearCameraHelper:");
         if (mCameraHelper != null) {
             mCameraHelper.release();
             mCameraHelper = null;
@@ -158,26 +167,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void selectDevice(final UsbDevice device) {
-        if (DEBUG) Log.v(TAG, "selectDevice:device=" + device.getDeviceName());
+        if (CAM_DISPLAY) Log.v(TAG, "selectDevice:device=" + device.getDeviceName());
         mCameraHelper.selectDevice(device);
     }
 
     private final ICameraHelper.StateCallback mStateListener = new ICameraHelper.StateCallback() {
         @Override
         public void onAttach(UsbDevice device) {
-            if (DEBUG) Log.v(TAG, "onAttach:");
+            if (CAM_DISPLAY) Log.v(TAG, "onAttach:");
             selectDevice(device);
         }
 
         @Override
         public void onDeviceOpen(UsbDevice device, boolean isFirstOpen) {
-            if (DEBUG) Log.v(TAG, "onDeviceOpen:");
+            if (CAM_DISPLAY) Log.v(TAG, "onDeviceOpen:");
             mCameraHelper.openCamera();
         }
 
         @Override
         public void onCameraOpen(UsbDevice device) {
-            if (DEBUG) Log.v(TAG, "onCameraOpen:");
+            if (CAM_DISPLAY) Log.v(TAG, "onCameraOpen:");
 
             mCameraHelper.startPreview();
 
@@ -199,21 +208,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     argb[i] = Color.argb(255, (rgbx >> 24) & 0xff, (rgbx >> 16) & 0xff, (rgbx >> 8) & 0xff);
                 }
 
-                if (DEBUG) {
+                if (CAM_DISPLAY) {
                     Bitmap image = Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888);
 
                     image.setPixels(argb, 0, size.width, 0, 0, size.width, size.height);
                     runOnUiThread(() -> {
                         mFrameCallbackPreview.setImageBitmap(image);
                     });
-            }
-
+                }
             }, UVCCamera.PIXEL_FORMAT_RGBX);
         }
 
         @Override
         public void onCameraClose(UsbDevice device) {
-            if (DEBUG) Log.v(TAG, "onCameraClose:");
+            if (CAM_DISPLAY) Log.v(TAG, "onCameraClose:");
 
             if (mCameraHelper != null) {
                 mCameraHelper.removeSurface(mCameraViewMain.getHolder().getSurface());
@@ -222,17 +230,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         @Override
         public void onDeviceClose(UsbDevice device) {
-            if (DEBUG) Log.v(TAG, "onDeviceClose:");
+            if (CAM_DISPLAY) Log.v(TAG, "onDeviceClose:");
         }
 
         @Override
         public void onDetach(UsbDevice device) {
-            if (DEBUG) Log.v(TAG, "onDetach:");
+            if (CAM_DISPLAY) Log.v(TAG, "onDetach:");
         }
 
         @Override
         public void onCancel(UsbDevice device) {
-            if (DEBUG) Log.v(TAG, "onCancel:");
+            if (CAM_DISPLAY) Log.v(TAG, "onCancel:");
         }
 
     };

@@ -39,6 +39,40 @@
             android:layout_height="wrap_content" />
     </FrameLayout>
 
+    <FrameLayout
+        android:id="@+id/flThermalCameraView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="25dp"
+        app:layout_constraintDimensionRatio="4:3"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toLeftOf="@+id/flFusionImageView"
+        app:layout_constraintTop_toBottomOf="@id/flCameraViewMain"
+        app:layout_constraintWidth_percent="0.4">
+
+        <ImageView
+            android:id="@+id/ivThermalCameraPreview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/flFusionImageView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="25dp"
+        app:layout_constraintDimensionRatio="4:3"
+        app:layout_constraintLeft_toRightOf="@+id/flThermalCameraView"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/flCameraViewMain"
+        app:layout_constraintWidth_percent="0.4">
+
+        <ImageView
+            android:id="@+id/ivFusionImagePreview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </FrameLayout>
+
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
