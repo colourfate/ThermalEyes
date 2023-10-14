@@ -21,6 +21,7 @@ import android.widget.ImageView;
 import com.herohan.uvcapp.CameraHelper;
 import com.herohan.uvcapp.ICameraHelper;
 import com.hjq.permissions.XXPermissions;
+import com.serenegiant.opengl.renderer.MirrorMode;
 import com.serenegiant.usb.Size;
 import com.serenegiant.usb.UVCCamera;
 import com.serenegiant.widget.AspectRatioSurfaceView;
@@ -48,7 +49,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         setTitle(R.string.entry_basic_preview);
         List<String> needPermissions = new ArrayList<>();
         needPermissions.add(Manifest.permission.CAMERA);
@@ -62,7 +62,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     initViews();
                 });
 
-        /*
         UsbManager usbManager = (UsbManager)getSystemService(USB_SERVICE);
         ThermalDevice mThermalDevice = new ThermalDevice(usbManager) {
             @Override
@@ -84,7 +83,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 originBm.setPixels(argb, 0, ThermalDevice.IMAGE_WIDTH,
                         0, 0, ThermalDevice.IMAGE_WIDTH,  ThermalDevice.IMAGE_HEIGHT);
                 Matrix matrix = new Matrix();
-                matrix.postScale(20, 20);   // Scale to 640x480
+                matrix.postScale(-20, 20);   // Scale to 640x480 and mirror
                 Bitmap scaleBm = Bitmap.createBitmap(originBm,
                         0, 0, originBm.getWidth(), originBm.getHeight(), matrix, true);
 
@@ -101,8 +100,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         } catch (IOException e) {
             Log.e(TAG, "Usb connect failed");
         }
-
-         */
     }
 
     private void initViews() {
@@ -138,6 +135,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btnCloseCamera.setOnClickListener(this);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     protected void onStart() {
         super.onStart();
@@ -172,22 +170,35 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private final ICameraHelper.StateCallback mStateListener = new ICameraHelper.StateCallback() {
+        static final int CAMERA_VIP = 2316;
+
         @Override
         public void onAttach(UsbDevice device) {
+            if (device.getVendorId() != CAMERA_VIP) {
+                Log.i(TAG, "Not support device: " + device.getVendorId());
+            }
             if (CAM_DISPLAY) Log.v(TAG, "onAttach:");
             selectDevice(device);
         }
 
         @Override
         public void onDeviceOpen(UsbDevice device, boolean isFirstOpen) {
+            if (device.getVendorId() != CAMERA_VIP) {
+                Log.i(TAG, "Not support device: " + device.getVendorId());
+                return;
+            }
             if (CAM_DISPLAY) Log.v(TAG, "onDeviceOpen:");
             mCameraHelper.openCamera();
         }
 
         @Override
         public void onCameraOpen(UsbDevice device) {
-            if (CAM_DISPLAY) Log.v(TAG, "onCameraOpen:");
+            if (device.getVendorId() != CAMERA_VIP) {
+                Log.i(TAG, "Not support device: " + device.getVendorId());
+                return;
+            }
 
+            if (CAM_DISPLAY) Log.v(TAG, "onCameraOpen:");
             mCameraHelper.startPreview();
 
             Size size = mCameraHelper.getPreviewSize();
@@ -221,8 +232,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         @Override
         public void onCameraClose(UsbDevice device) {
+            if (device.getVendorId() != CAMERA_VIP) {
+                Log.i(TAG, "Not support device: " + device.getVendorId());
+                return;
+            }
             if (CAM_DISPLAY) Log.v(TAG, "onCameraClose:");
-
             if (mCameraHelper != null) {
                 mCameraHelper.removeSurface(mCameraViewMain.getHolder().getSurface());
             }
@@ -230,16 +244,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         @Override
         public void onDeviceClose(UsbDevice device) {
+            if (device.getVendorId() != CAMERA_VIP) {
+                Log.i(TAG, "Not support device: " + device.getVendorId());
+                return;
+            }
             if (CAM_DISPLAY) Log.v(TAG, "onDeviceClose:");
         }
 
         @Override
         public void onDetach(UsbDevice device) {
+            if (device.getVendorId() != CAMERA_VIP) {
+                Log.i(TAG, "Not support device: " + device.getVendorId());
+                return;
+            }
             if (CAM_DISPLAY) Log.v(TAG, "onDetach:");
         }
 
         @Override
         public void onCancel(UsbDevice device) {
+            if (device.getVendorId() != CAMERA_VIP) {
+                Log.i(TAG, "Not support device: " + device.getVendorId());
+                return;
+            }
             if (CAM_DISPLAY) Log.v(TAG, "onCancel:");
         }
 

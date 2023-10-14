@@ -89,11 +89,11 @@ public abstract class ThermalDevice {
         }
 
         for (UsbDevice device : deviceList.values()) {
-            Log.d(TAG, "DeviceInfo: " + device.getVendorId() + " , "
+            Log.i(TAG, "DeviceInfo: " + device.getVendorId() + " , "
                     + device.getProductId());
 
             if (device.getVendorId() == vendorId && device.getProductId() == productId) {
-                Log.d(TAG, "enumerate device success");
+                Log.i(TAG, "enumerate device success");
                 return device;
             }
         }
@@ -106,7 +106,7 @@ public abstract class ThermalDevice {
         if (myUsbManager.hasPermission(device)) {
             return myUsbManager.openDevice(device);
         } else {
-            Log.e(TAG, "openDevice: Not permission");
+            Log.e(TAG, "openDevice: Not permission vid: " + device.getVendorId());
             return null;
         }
     }
