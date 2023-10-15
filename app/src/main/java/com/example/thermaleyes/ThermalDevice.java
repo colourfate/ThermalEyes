@@ -35,9 +35,10 @@ public abstract class ThermalDevice {
 
                 if (arg0.length != DATA_LEN ||
                         arg0[arg0.length - 2] != -128 || arg0[arg0.length - 1] != 0) {
-                    Log.e(TAG, "Receive invalid data, len: " + arg0.length + " EOF: " +
-                            Integer.toHexString(arg0[arg0.length - 2]) + ", " +
-                            Integer.toHexString(arg0[arg0.length - 1]));
+                    //Log.e(TAG, "Receive invalid data, len: " + arg0.length + " EOF: " +
+                    //        Integer.toHexString(arg0[arg0.length - 2]) + ", " +
+                    //        Integer.toHexString(arg0[arg0.length - 1]));
+                    Log.e(TAG, "Receive invalid data");
                     return;
                 }
 
@@ -127,7 +128,7 @@ public abstract class ThermalDevice {
         return tempData;
     }
 
-    private static ByteBuffer getTemperatureImage(float[] tempMatrix) {
+    private ByteBuffer getTemperatureImage(float[] tempMatrix) {
         float maxTemp = tempMatrix[0];
         float minTemp = tempMatrix[0];
         for (float t : tempMatrix) {
@@ -135,13 +136,14 @@ public abstract class ThermalDevice {
             minTemp = Math.min(minTemp, t);
         }
 
-        /* RGB888 */
-        ByteBuffer buffer = ByteBuffer.allocate(tempMatrix.length * 3);
+        /* ARGB8888 */
+        ByteBuffer buffer = ByteBuffer.allocate(tempMatrix.length * 4);
         for (float tmp : tempMatrix) {
             int gray = (int) ((tmp - minTemp) / (maxTemp - minTemp) * 255);
             int red = Math.abs(0 - gray);
             int green = Math.abs(127 - gray);
             int blue = Math.abs(255 - gray);
+            buffer.put((byte) (-1));
             buffer.put((byte) red);
             buffer.put((byte) green);
             buffer.put((byte) blue);

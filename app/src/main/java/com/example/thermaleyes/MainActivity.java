@@ -43,6 +43,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private AspectRatioSurfaceView mCameraViewMain;
     private ImageView mFrameCallbackPreview;
     private ImageView mThermalCameraPreview;
+    private ImageView mFusionImagePreview;
+
+    private final ImageFusion mImageFusion = new ImageFusion(DEFAULT_WIDTH, DEFAULT_HEIGHT) {
+
+        @Override
+        public void onFrame(int[] argbFrame) {
+            Bitmap bm = Bitmap.createBitmap(DEFAULT_WIDTH, DEFAULT_HEIGHT, Bitmap.Config.ARGB_8888);
+            bm.setPixels(argbFrame, 0, DEFAULT_WIDTH, 0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+            runOnUiThread(() -> {
+                mFusionImagePreview.setImageBitmap(bm);
+            });
+        }
+    };
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
@@ -63,29 +76,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 });
 
         UsbManager usbManager = (UsbManager)getSystemService(USB_SERVICE);
-        ThermalDevice mThermalDevice = new ThermalDevice(usbManager) {
+        ThermalDevice thermalDevice = new ThermalDevice(usbManager) {
             @Override
             public void onFrame(ByteBuffer frame) {
                 Log.i(TAG, "Get temperature RGB frame");
 
-                int[] argb = new int[frame.remaining() / 3];
+                int[] argb = new int[frame.remaining() / 4];
                 for (int i = 0; i < argb.length; i++) {
-                    int red = frame.get();
-                    int green = frame.get();
-                    int blue = frame.get();
-
-                    argb[i] = Color.argb(255, red, green, blue);
+                    argb[i] = frame.getInt();
                 }
 
                 Bitmap originBm = Bitmap.createBitmap(
                         ThermalDevice.IMAGE_WIDTH, ThermalDevice.IMAGE_HEIGHT,
                         Bitmap.Config.ARGB_8888);
                 originBm.setPixels(argb, 0, ThermalDevice.IMAGE_WIDTH,
-                        0, 0, ThermalDevice.IMAGE_WIDTH,  ThermalDevice.IMAGE_HEIGHT);
+                        0, 0, ThermalDevice.IMAGE_WIDTH, ThermalDevice.IMAGE_HEIGHT);
                 Matrix matrix = new Matrix();
                 matrix.postScale(-20, 20);   // Scale to 640x480 and mirror
                 Bitmap scaleBm = Bitmap.createBitmap(originBm,
                         0, 0, originBm.getWidth(), originBm.getHeight(), matrix, true);
+
+                int[] scaleArgb = new int[scaleBm.getWidth() * scaleBm.getHeight()];
+                scaleBm.getPixels(scaleArgb, 0, scaleBm.getWidth(),
+                        0, 0, scaleBm.getWidth(),scaleBm.getHeight() );
+                mImageFusion.putThermalImage(scaleArgb);
 
                 if (TEMP_DISPLAY) {
                     runOnUiThread(() -> {
@@ -96,7 +110,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         };
 
         try {
-            mThermalDevice.connect();
+            thermalDevice.connect();
         } catch (IOException e) {
             Log.e(TAG, "Usb connect failed");
         }
@@ -128,6 +142,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
         mFrameCallbackPreview = findViewById(R.id.ivFrameCallbackPreview);
         mThermalCameraPreview = findViewById(R.id.ivThermalCameraPreview);
+        mFusionImagePreview = findViewById(R.id.ivFusionImagePreview);
 
         Button btnOpenCamera = findViewById(R.id.btnOpenCamera);
         btnOpenCamera.setOnClickListener(this);
@@ -140,12 +155,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onStart() {
         super.onStart();
         initCameraHelper();
+        mImageFusion.start();
     }
 
     @Override
     protected void onStop() {
         super.onStop();
         clearCameraHelper();
+        mImageFusion.exit();
     }
 
     public void initCameraHelper() {
@@ -213,11 +230,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             mCameraHelper.setFrameCallback(frame -> {
                 int[] argb = new int[frame.remaining() / 4];
+
                 for (int i = 0; i < argb.length; i++) {
                     int rgbx = frame.getInt();
+                    int red = (rgbx >> 24) & 0xff;
+                    int green = (rgbx >> 16) & 0xff;
+                    int blue = (rgbx >> 8) & 0xff;
 
-                    argb[i] = Color.argb(255, (rgbx >> 24) & 0xff, (rgbx >> 16) & 0xff, (rgbx >> 8) & 0xff);
+                    argb[i] = Color.argb(255, red, green, blue);
                 }
+                mImageFusion.putCameraImage(argb);
 
                 if (CAM_DISPLAY) {
                     Bitmap image = Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888);
