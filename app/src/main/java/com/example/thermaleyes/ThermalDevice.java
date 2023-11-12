@@ -136,17 +136,11 @@ public abstract class ThermalDevice {
             minTemp = Math.min(minTemp, t);
         }
 
-        /* ARGB8888 */
-        ByteBuffer buffer = ByteBuffer.allocate(tempMatrix.length * 4);
+        /* Only luminance */
+        ByteBuffer buffer = ByteBuffer.allocate(tempMatrix.length);
         for (float tmp : tempMatrix) {
             int gray = (int) ((tmp - minTemp) / (maxTemp - minTemp) * 255);
-            int red = Math.abs(0 - gray);
-            int green = Math.abs(127 - gray);
-            int blue = Math.abs(255 - gray);
-            buffer.put((byte) (-1));
-            buffer.put((byte) red);
-            buffer.put((byte) green);
-            buffer.put((byte) blue);
+            buffer.put((byte) gray);
         }
         Log.e(TAG, "Max: " + maxTemp + " Min: " + minTemp);
 

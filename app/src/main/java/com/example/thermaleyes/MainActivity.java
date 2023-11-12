@@ -45,14 +45,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private ImageView mThermalCameraPreview;
     private ImageView mFusionImagePreview;
 
+    private NV21ToBitmap mNv21ToBitmap;
     private final ImageFusion mImageFusion = new ImageFusion(DEFAULT_WIDTH, DEFAULT_HEIGHT) {
 
         @Override
-        public void onFrame(int[] argbFrame) {
-            Bitmap bm = Bitmap.createBitmap(DEFAULT_WIDTH, DEFAULT_HEIGHT, Bitmap.Config.ARGB_8888);
-            bm.setPixels(argbFrame, 0, DEFAULT_WIDTH, 0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+        public void onFrame(byte[] frame) {
+            Bitmap bitmap = mNv21ToBitmap.nv21ToBitmap(frame, DEFAULT_WIDTH, DEFAULT_HEIGHT);
             runOnUiThread(() -> {
-                mFusionImagePreview.setImageBitmap(bm);
+                mFusionImagePreview.setImageBitmap(bitmap);
             });
         }
     };
@@ -75,15 +75,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     initViews();
                 });
 
+        mNv21ToBitmap = new NV21ToBitmap(this);
         UsbManager usbManager = (UsbManager)getSystemService(USB_SERVICE);
         ThermalDevice thermalDevice = new ThermalDevice(usbManager) {
             @Override
             public void onFrame(ByteBuffer frame) {
-                Log.i(TAG, "Get temperature RGB frame");
+                Log.i(TAG, "Get temperature frame");
 
-                int[] argb = new int[frame.remaining() / 4];
+                int[] argb = new int[frame.remaining()];
                 for (int i = 0; i < argb.length; i++) {
-                    argb[i] = frame.getInt();
+                    int gray = frame.get() & 0xff;
+
+                    argb[i] = Color.argb(255, gray, gray, gray);
                 }
 
                 Bitmap originBm = Bitmap.createBitmap(
@@ -97,9 +100,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         0, 0, originBm.getWidth(), originBm.getHeight(), matrix, true);
 
                 int[] scaleArgb = new int[scaleBm.getWidth() * scaleBm.getHeight()];
+                byte[] scaleTherm = new byte[scaleArgb.length];
                 scaleBm.getPixels(scaleArgb, 0, scaleBm.getWidth(),
                         0, 0, scaleBm.getWidth(),scaleBm.getHeight() );
-                mImageFusion.putThermalImage(scaleArgb);
+
+                for (int i = 0; i < scaleArgb.length; i++) {
+                    scaleTherm[i] = (byte) Color.red(scaleArgb[i]);
+                }
+                mImageFusion.putThermalImage(scaleTherm);
 
                 if (TEMP_DISPLAY) {
                     runOnUiThread(() -> {
@@ -229,27 +237,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             mCameraHelper.addSurface(mCameraViewMain.getHolder().getSurface(), false);
 
             mCameraHelper.setFrameCallback(frame -> {
-                int[] argb = new int[frame.remaining() / 4];
-
-                for (int i = 0; i < argb.length; i++) {
-                    int rgbx = frame.getInt();
-                    int red = (rgbx >> 24) & 0xff;
-                    int green = (rgbx >> 16) & 0xff;
-                    int blue = (rgbx >> 8) & 0xff;
-
-                    argb[i] = Color.argb(255, red, green, blue);
-                }
-                mImageFusion.putCameraImage(argb);
+                byte[] nv21 = new byte[frame.remaining()];
+                frame.get(nv21,0,nv21.length);
+                mImageFusion.putCameraImage(nv21);
 
                 if (CAM_DISPLAY) {
-                    Bitmap image = Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888);
-
-                    image.setPixels(argb, 0, size.width, 0, 0, size.width, size.height);
+                    Bitmap bitmap = mNv21ToBitmap.nv21ToBitmap(nv21, size.width, size.height);
                     runOnUiThread(() -> {
-                        mFrameCallbackPreview.setImageBitmap(image);
+                        mFrameCallbackPreview.setImageBitmap(bitmap);
                     });
                 }
-            }, UVCCamera.PIXEL_FORMAT_RGBX);
+            }, UVCCamera.PIXEL_FORMAT_NV21);
         }
 
         @Override
