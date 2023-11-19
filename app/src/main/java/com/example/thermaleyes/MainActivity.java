@@ -12,6 +12,7 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.View;
@@ -40,9 +41,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final int DEFAULT_HEIGHT = 480;
 
     private ICameraHelper mCameraHelper;
-    private AspectRatioSurfaceView mCameraViewMain;
-    private ImageView mFrameCallbackPreview;
-    private ImageView mThermalCameraPreview;
     private ImageView mFusionImagePreview;
 
     private NV21ToBitmap mNv21ToBitmap;
@@ -50,9 +48,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         @Override
         public void onFrame(byte[] frame) {
-            Bitmap bitmap = mNv21ToBitmap.nv21ToBitmap(frame, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+            Bitmap srcBm = mNv21ToBitmap.nv21ToBitmap(frame, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+
+            DisplayMetrics dm = new DisplayMetrics();
+            getWindowManager().getDefaultDisplay().getMetrics(dm);
+            int screenWidth = dm.widthPixels;
+            float scaleTimes = (float)screenWidth / srcBm.getWidth();
+
+            Matrix matrix = new Matrix();
+            matrix.postScale(scaleTimes, scaleTimes);
+            Bitmap scaleBm = Bitmap.createBitmap(srcBm,
+                    0, 0, srcBm.getWidth(), srcBm.getHeight(), matrix, true);
+
             runOnUiThread(() -> {
-                mFusionImagePreview.setImageBitmap(bitmap);
+                mFusionImagePreview.setImageBitmap(scaleBm);
             });
         }
     };
@@ -110,9 +119,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 mImageFusion.putThermalImage(scaleTherm);
 
                 if (TEMP_DISPLAY) {
-                    runOnUiThread(() -> {
-                        mThermalCameraPreview.setImageBitmap(scaleBm);
-                    });
+//                    runOnUiThread(() -> {
+//                        mThermalCameraPreview.setImageBitmap(scaleBm);
+//                    });
                 }
             }
         };
@@ -125,31 +134,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void initViews() {
-        mCameraViewMain = findViewById(R.id.svCameraViewMain);
-        mCameraViewMain.setAspectRatio(DEFAULT_WIDTH, DEFAULT_HEIGHT);
-
-        mCameraViewMain.getHolder().addCallback(new SurfaceHolder.Callback() {
-            @Override
-            public void surfaceCreated(@NonNull SurfaceHolder holder) {
-                if (mCameraHelper != null) {
-                    mCameraHelper.addSurface(holder.getSurface(), false);
-                }
-            }
-
-            @Override
-            public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
-
-            }
-
-            @Override
-            public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
-                if (mCameraHelper != null) {
-                    mCameraHelper.removeSurface(holder.getSurface());
-                }
-            }
-        });
-        mFrameCallbackPreview = findViewById(R.id.ivFrameCallbackPreview);
-        mThermalCameraPreview = findViewById(R.id.ivThermalCameraPreview);
         mFusionImagePreview = findViewById(R.id.ivFusionImagePreview);
 
         Button btnOpenCamera = findViewById(R.id.btnOpenCamera);
@@ -227,25 +211,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             mCameraHelper.startPreview();
 
             Size size = mCameraHelper.getPreviewSize();
-            if (size != null) {
-                int width = size.width;
-                int height = size.height;
-                //auto aspect ratio
-                mCameraViewMain.setAspectRatio(width, height);
-            }
-
-            mCameraHelper.addSurface(mCameraViewMain.getHolder().getSurface(), false);
-
             mCameraHelper.setFrameCallback(frame -> {
                 byte[] nv21 = new byte[frame.remaining()];
                 frame.get(nv21,0,nv21.length);
                 mImageFusion.putCameraImage(nv21);
 
                 if (CAM_DISPLAY) {
-                    Bitmap bitmap = mNv21ToBitmap.nv21ToBitmap(nv21, size.width, size.height);
-                    runOnUiThread(() -> {
-                        mFrameCallbackPreview.setImageBitmap(bitmap);
-                    });
+//                    Bitmap bitmap = mNv21ToBitmap.nv21ToBitmap(nv21, size.width, size.height);
+//                    runOnUiThread(() -> {
+//                        mFrameCallbackPreview.setImageBitmap(bitmap);
+//                    });
                 }
             }, UVCCamera.PIXEL_FORMAT_NV21);
         }
@@ -257,9 +232,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 return;
             }
             if (CAM_DISPLAY) Log.v(TAG, "onCameraClose:");
-            if (mCameraHelper != null) {
-                mCameraHelper.removeSurface(mCameraViewMain.getHolder().getSurface());
-            }
         }
 
         @Override
