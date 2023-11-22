@@ -18,6 +18,7 @@ import android.view.SurfaceHolder;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.herohan.uvcapp.CameraHelper;
 import com.herohan.uvcapp.ICameraHelper;
@@ -42,6 +43,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private ICameraHelper mCameraHelper;
     private ImageView mFusionImagePreview;
+    private TextView mMaxTempTestView, mMinTempTestView;
 
     private NV21ToBitmap mNv21ToBitmap;
     private final ImageFusion mImageFusion = new ImageFusion(DEFAULT_WIDTH, DEFAULT_HEIGHT) {
@@ -88,7 +90,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         UsbManager usbManager = (UsbManager)getSystemService(USB_SERVICE);
         ThermalDevice thermalDevice = new ThermalDevice(usbManager) {
             @Override
-            public void onFrame(ByteBuffer frame) {
+            public void onFrame(ByteBuffer frame, float maxTemp, float minTemp) {
                 Log.i(TAG, "Get temperature frame");
 
                 int[] argb = new int[frame.remaining()];
@@ -119,9 +121,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 mImageFusion.putThermalImage(scaleTherm);
 
                 if (TEMP_DISPLAY) {
-//                    runOnUiThread(() -> {
+                    runOnUiThread(() -> {
+                        mMaxTempTestView.setText(String.format("max: %.2f", maxTemp));
+                        mMinTempTestView.setText(String.format("min: %.2f", minTemp));
 //                        mThermalCameraPreview.setImageBitmap(scaleBm);
-//                    });
+                    });
                 }
             }
         };
@@ -135,6 +139,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void initViews() {
         mFusionImagePreview = findViewById(R.id.ivFusionImagePreview);
+        mMaxTempTestView = findViewById(R.id.tvMaxTemperature);
+        mMinTempTestView = findViewById(R.id.tvMinTemperature);
 
         Button btnOpenCamera = findViewById(R.id.btnOpenCamera);
         btnOpenCamera.setOnClickListener(this);

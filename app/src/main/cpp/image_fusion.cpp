@@ -25,9 +25,9 @@
 #define CLIP(x, a, b) ((x) < (a) ? (a) : MIN(x, b))
 
 #define CAM_UV_K 1
-#define THERM_UV_K 1
+#define THERM_UV_K 0.7
 #define CAM_Y_K 1
-#define THERM_Y_K 1
+#define THERM_Y_K 0
 
 #define REF_LEN 4
 #define RANGE 255
@@ -234,12 +234,18 @@ void color_map_fusion(uint32_t *fusion_data, const uint32_t *cam_data, const uin
         for (j = 0; j < width / 2; j++) {
             uint32_t v = (i * width / 2 + j) * 2;
             uint32_t u = v + 1;
-            int8_t t_val;
+            int8_t u_off, v_off;
             int u_val, v_val;
+            uint8_t gray = therm_y[i * width * 2 + j * 2];
+            uint8_t red = abs(0 - gray);
+            uint8_t green = abs(127 - gray);
+            uint8_t blue = abs(255 - gray);
 
-            t_val = therm_y[i * width * 2 + j * 2] - 128;
-            u_val = (int)(cam_uv[u] * CAM_UV_K - t_val * THERM_UV_K);
-            v_val = (int)(cam_uv[v] * CAM_UV_K + t_val * THERM_UV_K);
+            u_off = -0.1687 * (red - 128) - 0.3313 * (green - 128) + 0.5 * (blue - 128);
+            v_off = 0.5 * (red - 128) - 0.4187 * (green - 128) - 0.0813 * (blue - 128);
+
+            u_val = (int)(cam_uv[u] * CAM_UV_K + u_off * THERM_UV_K);
+            v_val = (int)(cam_uv[v] * CAM_UV_K + v_off * THERM_UV_K);
             fusion_uv[u] = (uint8_t)CLIP(u_val, 0, 255);
             fusion_uv[v] = (uint8_t)CLIP(v_val, 0, 255);
         }
@@ -251,8 +257,13 @@ void color_map_fusion(uint32_t *fusion_data, const uint32_t *cam_data, const uin
         for (j = 0; j < width; j++) {
             uint32_t pos = i * width + j;
             int y_val;
+            uint8_t gray = therm_y[pos];
+            uint8_t red = abs(0 - gray);
+            uint8_t green = abs(127 - gray);
+            uint8_t blue = abs(255 - gray);
+            int8_t y_off = 0.299 * (red - 128) - 0.587 * (green - 128) - 0.114 * (blue - 128);
 
-            y_val = (int)(cam_y[pos] * CAM_Y_K + (therm_y[pos] - 128) * THERM_Y_K);
+            y_val = (int)(cam_y[pos] * CAM_Y_K + y_off * THERM_Y_K);
             fusion_y[pos] = (uint8_t)CLIP(y_val, 0, 255);
         }
     }

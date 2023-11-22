@@ -43,8 +43,17 @@ public abstract class ThermalDevice {
                 }
 
                 float[] tempData = getTemperatureData(arg0);
-                ByteBuffer tempImage = getTemperatureImage(tempData);
-                onFrame(tempImage);
+
+                float maxTemp = tempData[0];
+                float minTemp = tempData[0];
+                for (float t : tempData) {
+                    maxTemp = Math.max(maxTemp, t);
+                    minTemp = Math.min(minTemp, t);
+                }
+                Log.i(TAG, "Max: " + maxTemp + " Min: " + minTemp);
+
+                ByteBuffer tempImage = getTemperatureImage(tempData, maxTemp, minTemp);
+                onFrame(tempImage, maxTemp, minTemp);
             };
 
     public ThermalDevice(UsbManager usbManager) {
@@ -52,7 +61,7 @@ public abstract class ThermalDevice {
     }
 
     /* RGB888 temperature image */
-    public abstract void onFrame(ByteBuffer frame);
+    public abstract void onFrame(ByteBuffer frame, float maxTemp, float minTemp);
 
     public void connect() throws IOException {
         UsbDevice device = enumerateDevice(VENDOR_ID, PRODUCT_ID);
@@ -128,21 +137,13 @@ public abstract class ThermalDevice {
         return tempData;
     }
 
-    private ByteBuffer getTemperatureImage(float[] tempMatrix) {
-        float maxTemp = tempMatrix[0];
-        float minTemp = tempMatrix[0];
-        for (float t : tempMatrix) {
-            maxTemp = Math.max(maxTemp, t);
-            minTemp = Math.min(minTemp, t);
-        }
-
+    private ByteBuffer getTemperatureImage(float[] tempMatrix, float maxTemp, float minTemp) {
         /* Only luminance */
         ByteBuffer buffer = ByteBuffer.allocate(tempMatrix.length);
         for (float tmp : tempMatrix) {
             int gray = (int) ((tmp - minTemp) / (maxTemp - minTemp) * 255);
             buffer.put((byte) gray);
         }
-        Log.e(TAG, "Max: " + maxTemp + " Min: " + minTemp);
 
         buffer.position(0);
         return buffer;

@@ -45,4 +45,30 @@
             android:text="@string/btn_close_camera" />
     </RelativeLayout>
 
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="bottom"
+    android:orientation="vertical"
+    app:layout_constraintTop_toTopOf="parent">
+
+    <TextView
+        android:id="@+id/tvMaxTemperature"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="MAX"
+        android:textColor="@color/CRIMSON"
+        tools:layout_absoluteX="16dp"
+        tools:layout_absoluteY="15dp" />
+
+    <TextView
+        android:id="@+id/tvMinTemperature"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="MIN"
+        android:textColor="@color/ROYALBLUE"
+        tools:layout_absoluteX="16dp"
+        tools:layout_absoluteY="53dp" />
+</LinearLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>
