@@ -1,7 +1,11 @@
 # ThermalEyes
 双目热成像手机APP，用于获取摄像头数据和热成像数据，并进行融合显示
+
 ## Environment
 Android Studio Bumblebee | 2021.1.1 Patch 2
+
+## Test Platform
+meizu 18s
 
 ## Depends on
  - [UVCAndroid](https://github.com/shiyinghan/UVCAndroid)
