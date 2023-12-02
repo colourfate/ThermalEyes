@@ -28,6 +28,8 @@ public abstract class ThermalDevice {
     private final static int PRODUCT_ID = 22336;
     private final static int IMAGE_PIXEL = IMAGE_WIDTH * IMAGE_HEIGHT;
     private final static int DATA_LEN = IMAGE_PIXEL * 2 + 2;
+    private final static float MAX_RANGE = 20.0f;
+
     private final UsbManager myUsbManager;
     private final UsbSerialInterface.UsbReadCallback mCallback =
             arg0 -> {
@@ -140,8 +142,10 @@ public abstract class ThermalDevice {
     private ByteBuffer getTemperatureImage(float[] tempMatrix, float maxTemp, float minTemp) {
         /* Only luminance */
         ByteBuffer buffer = ByteBuffer.allocate(tempMatrix.length);
+        float range = Math.max(maxTemp - minTemp, MAX_RANGE);
+
         for (float tmp : tempMatrix) {
-            int gray = (int) ((tmp - minTemp) / (maxTemp - minTemp) * 255);
+            int gray = (int) ((tmp - minTemp) / range * 255);
             buffer.put((byte) gray);
         }
 
