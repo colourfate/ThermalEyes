@@ -10,6 +10,11 @@ cmake_minimum_required(VERSION 3.18.1)
 
 project("img_algo")
 
+# OpenCV 配置
+include_directories(${CMAKE_SOURCE_DIR}/include)
+add_library( lib_opencv SHARED IMPORTED )
+set_target_properties(lib_opencv PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/jniLibs/${ANDROID_ABI}/libopencv_java4.so)
+
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
@@ -43,6 +48,7 @@ find_library( # Sets the name of the path variable.
 
 target_link_libraries( # Specifies the target library.
                         img_algo
+                        lib_opencv
 
                        # Links the target library to the log library
                        # included in the NDK.

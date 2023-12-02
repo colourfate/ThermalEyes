@@ -1,6 +1,9 @@
 #include <jni.h>
 #include <math.h>
 #include <android/log.h>
+#include <opencv2/opencv.hpp>
+
+using namespace cv;
 
 // Write C++ code here.
 //
@@ -297,6 +300,7 @@ Java_com_example_thermaleyes_ImageFusion_getFusionImage(JNIEnv *env, jobject thi
     jbyte *fusion_data = (jbyte *)env->GetByteArrayElements(fusionData, 0);
     jbyte *cam_data = (jbyte *)env->GetByteArrayElements(camData, 0);
     jbyte *therm_data = (jbyte *)env->GetByteArrayElements(thermData, 0);
+    Mat grayMat;
 
     /* 数据融合 */
     LOGE("fusion start");
