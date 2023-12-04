@@ -1,14 +1,11 @@
 package com.example.thermaleyes;
 
-import android.content.Context;
 import android.os.Build;
 import android.util.Log;
+import android.util.Size;
 
 import androidx.annotation.RequiresApi;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.LinkedList;
 
 public abstract class ImageFusion extends Thread {
@@ -17,19 +14,23 @@ public abstract class ImageFusion extends Thread {
     private final LinkedList<byte[]> mCameraQueue = new LinkedList<>();
     private final LinkedList<byte[]> mThermalQueue = new LinkedList<>();
     private static final String TAG = ImageFusion.class.getSimpleName();
-    private final int mWidth;
-    private final int mHeight;
+    private final int mCamWidth;
+    private final int mCamHeight;
+    private final int mThermWidth;
+    private final int mThermHeight;
 
     // NV21
     public abstract void onFrame(byte[] argbFrame);
 
-    public ImageFusion(int width, int height) {
-        mWidth = width;
-        mHeight = height;
+    public ImageFusion(int camWidth, int camHeight, int thermWidth, int thermHeight) {
+        mCamWidth = camWidth;
+        mCamHeight = camHeight;
+        mThermWidth = thermWidth;
+        mThermHeight = thermHeight;
     }
 
     public void putCameraImage(byte[] frame) {
-        if (frame.length != mWidth * mHeight * 3 / 2) {
+        if (frame.length != mCamWidth * mCamHeight * 3 / 2) {
             Log.e(TAG, "Invalid camera frame length");
             return;
         }
@@ -40,7 +41,7 @@ public abstract class ImageFusion extends Thread {
     }
 
     public void putThermalImage(byte[] frame) {
-        if (frame.length != mWidth * mHeight) {
+        if (frame.length != mThermWidth * mThermHeight) {
             Log.e(TAG, "Invalid thermal frame length");
             return;
         }
@@ -73,8 +74,11 @@ public abstract class ImageFusion extends Thread {
             Log.e(TAG, "get camera data: " + Integer.toHexString(cameraFrame[0]));
             Log.e(TAG, "get thermal data: " + Integer.toHexString(thermalFrame[0]));
 
-            byte[] fusionFrame = calculate(cameraFrame, thermalFrame, mWidth, mHeight);
-            onFrame(fusionFrame);
+            byte[] fusionData = new byte[cameraFrame.length];
+            getFusionImage(fusionData, cameraFrame, thermalFrame,
+                    mCamWidth, mCamHeight, mThermWidth, mThermHeight);
+
+            onFrame(fusionData);
         }
     }
 
@@ -104,15 +108,10 @@ public abstract class ImageFusion extends Thread {
         return queue.poll();
     }
 
-    private byte[] calculate(byte[] camData, byte[] thermData, int width, int height) {
-        byte[] fusionData = new byte[camData.length];
-        getFusionImage(fusionData, camData, thermData, width, height);
-        return fusionData;
-    }
-
     static {
         System.loadLibrary("img_algo");
     }
 
-    private native void getFusionImage(byte[] fusionData, byte[] camData, byte[] thermData, int width, int height);
+    private native void getFusionImage(byte[] fusionData, byte[] camData, byte[] thermData,
+                                       int camWidth, int camHeight, int thermWidth, int thermHeight);
 }

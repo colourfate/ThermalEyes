@@ -46,7 +46,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private TextView mMaxTempTestView, mMinTempTestView;
 
     private NV21ToBitmap mNv21ToBitmap;
-    private final ImageFusion mImageFusion = new ImageFusion(DEFAULT_WIDTH, DEFAULT_HEIGHT) {
+    private final ImageFusion mImageFusion = new ImageFusion(DEFAULT_WIDTH, DEFAULT_HEIGHT,
+            ThermalDevice.IMAGE_WIDTH, ThermalDevice.IMAGE_HEIGHT) {
 
         @Override
         public void onFrame(byte[] frame) {
@@ -93,32 +94,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void onFrame(ByteBuffer frame, float maxTemp, float minTemp) {
                 Log.i(TAG, "Get temperature frame");
 
-                int[] argb = new int[frame.remaining()];
-                for (int i = 0; i < argb.length; i++) {
-                    int gray = frame.get() & 0xff;
-
-                    argb[i] = Color.argb(255, gray, gray, gray);
-                }
-
-                Bitmap originBm = Bitmap.createBitmap(
-                        ThermalDevice.IMAGE_WIDTH, ThermalDevice.IMAGE_HEIGHT,
-                        Bitmap.Config.ARGB_8888);
-                originBm.setPixels(argb, 0, ThermalDevice.IMAGE_WIDTH,
-                        0, 0, ThermalDevice.IMAGE_WIDTH, ThermalDevice.IMAGE_HEIGHT);
-                Matrix matrix = new Matrix();
-                matrix.postScale(-20, 20);   // Scale to 640x480 and mirror
-                Bitmap scaleBm = Bitmap.createBitmap(originBm,
-                        0, 0, originBm.getWidth(), originBm.getHeight(), matrix, true);
-
-                int[] scaleArgb = new int[scaleBm.getWidth() * scaleBm.getHeight()];
-                byte[] scaleTherm = new byte[scaleArgb.length];
-                scaleBm.getPixels(scaleArgb, 0, scaleBm.getWidth(),
-                        0, 0, scaleBm.getWidth(),scaleBm.getHeight() );
-
-                for (int i = 0; i < scaleArgb.length; i++) {
-                    scaleTherm[i] = (byte) Color.red(scaleArgb[i]);
-                }
-                mImageFusion.putThermalImage(scaleTherm);
+                byte[] therm_data = new byte[frame.remaining()];
+                frame.get(therm_data);
+                mImageFusion.putThermalImage(therm_data);
 
                 if (TEMP_DISPLAY) {
                     runOnUiThread(() -> {

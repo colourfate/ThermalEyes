@@ -27,10 +27,10 @@ using namespace cv;
 #define MAX(i, j) (((i) > (j)) ? (i) : (j))
 #define CLIP(x, a, b) ((x) < (a) ? (a) : MIN(x, b))
 
-#define CAM_UV_K 1
-#define THERM_UV_K 0.7
-#define CAM_Y_K 1
-#define THERM_Y_K 0.7
+#define CAM_UV_K 0
+#define THERM_UV_K 1
+#define CAM_Y_K 0
+#define THERM_Y_K 1
 
 #define REF_LEN 4
 #define RANGE 255
@@ -40,31 +40,20 @@ using namespace cv;
 enum { Y, COLOR_MAX };
 
 typedef struct {
-    uint32_t width, height;
+    uint32_t cam_width, cam_height;
+    uint32_t therm_width, therm_height;
     uint8_t *result;
     const uint8_t *cam;
     const uint8_t *therm;
-    const uint8_t *ref_t[REF_LEN * 2 + 1];
-    const uint8_t *ref_c[REF_LEN * 2 + 1];
-    uint8_t last_t_row[REF_LEN * 2 + 1];
-    uint8_t last_val[COLOR_MAX];
-    float last_t_sum[COLOR_MAX];
-    float last_sum[COLOR_MAX];
 } image_data;
 
 static image_data g_image;
 
-void fusion_init(uint32_t width, uint32_t height)
-{
-    g_image.width = width;
-    g_image.height = height;
-}
-
 void color_map_fusion(uint8_t *fusion_data, const uint8_t *cam_data, const uint8_t *therm_data)
 {
     const uint8_t *therm_y = therm_data;
-    uint32_t width = g_image.width;
-    uint32_t height = g_image.height;
+    uint32_t width = g_image.cam_width;
+    uint32_t height = g_image.cam_height;
     uint32_t i, j;
 
     uint8_t *cam_uv = (uint8_t *)cam_data +  width * height;
@@ -81,10 +70,10 @@ void color_map_fusion(uint8_t *fusion_data, const uint8_t *cam_data, const uint8
 
             //u_off = -0.1687 * (red - 128) - 0.3313 * (green - 128) + 0.5 * (blue - 128);
             //v_off = 0.5 * (red - 128) - 0.4187 * (green - 128) - 0.0813 * (blue - 128);
-            u_off = -0.148 * red - 0.291 * green + 0.439 * blue;
-            v_off = 0.439 * red - 0.368 * green - 0.071 * blue;
-            //u_off = -0.148 * red - 0.291 * green + 0.439 * blue + 128;
-            //v_off = 0.439 * red - 0.368 * green - 0.071 * blue + 128;
+            //u_off = -0.148 * red - 0.291 * green + 0.439 * blue;
+            //v_off = 0.439 * red - 0.368 * green - 0.071 * blue;
+            u_off = -0.148 * red - 0.291 * green + 0.439 * blue + 128;
+            v_off = 0.439 * red - 0.368 * green - 0.071 * blue + 128;
 
             u_val = (int)(cam_uv[u] * CAM_UV_K + u_off * THERM_UV_K);
             v_val = (int)(cam_uv[v] * CAM_UV_K + v_off * THERM_UV_K);
@@ -104,8 +93,8 @@ void color_map_fusion(uint8_t *fusion_data, const uint8_t *cam_data, const uint8
             uint8_t red = therm_y[pos * 3 + 2];
 
             //int8_t y_off = 0.299 * (red - 128) + 0.587 * (green - 128) + 0.114 * (blue - 128);
-            int y_off = 0.257 * red + 0.504 * green + 0.098 * blue + 16 - 128;
-            //int y_off = 0.257 * red + 0.504 * green + 0.098 * blue + 16;
+            //int y_off = 0.257 * red + 0.504 * green + 0.098 * blue + 16 - 128;
+            int y_off = 0.257 * red + 0.504 * green + 0.098 * blue + 16;
 
             y_val = (int)(cam_y[pos] * CAM_Y_K + y_off * THERM_Y_K);
             fusion_y[pos] = (uint8_t)CLIP(y_val, 0, 255);
@@ -116,13 +105,17 @@ void color_map_fusion(uint8_t *fusion_data, const uint8_t *cam_data, const uint8
 
 void fusion_get_image(uint32_t *fusion_data, const uint32_t *cam_data, const uint32_t *therm_data)
 {
-    Mat im_cam(g_image.height, g_image.width, CV_8UC1, (uint8_t *)cam_data);
-    Mat im_therm(g_image.height, g_image.width, CV_8UC1, (uint8_t *)therm_data);
+    Mat im_cam(g_image.cam_height, g_image.cam_width, CV_8UC1, (uint8_t *)cam_data);
+    Mat im_therm(g_image.therm_height, g_image.therm_width, CV_8UC1, (uint8_t *)therm_data);
+
+    Mat im_therm_scale, im_therm_mirror;
+    flip(im_therm, im_therm_mirror, 1);
+    resize(im_therm_mirror, im_therm_scale, Size(im_cam.cols, im_cam.rows), 0, 0, INTER_LINEAR);
 
     Mat im_cam_l;
-    GaussianBlur(im_cam, im_cam_l, Size(5, 5), 3, 3);
+    GaussianBlur(im_cam, im_cam_l, Size(11, 11), 5, 5);
     Mat im_cam_h = im_cam - im_cam_l;
-    Mat im_fusion = im_cam_h + im_therm;
+    Mat im_fusion = im_cam_h + im_therm_scale;
     Mat im_fusion_color;
     applyColorMap(im_fusion, im_fusion_color, COLORMAP_JET);
 
@@ -133,15 +126,19 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_thermaleyes_ImageFusion_getFusionImage(JNIEnv *env, jobject thiz,
                                                         jbyteArray fusionData, jbyteArray camData,
-                                                        jbyteArray thermData, jint width,
-                                                        jint height) {
+                                                        jbyteArray thermData, jint cam_width,
+                                                        jint cam_height, jint therm_width,
+                                                        jint therm_height) {
     jbyte *fusion_data = (jbyte *)env->GetByteArrayElements(fusionData, 0);
     jbyte *cam_data = (jbyte *)env->GetByteArrayElements(camData, 0);
     jbyte *therm_data = (jbyte *)env->GetByteArrayElements(thermData, 0);
 
     /* 数据融合 */
     LOGE("fusion start");
-    fusion_init(width, height);
+    g_image.cam_width = cam_width;
+    g_image.cam_height = cam_height;
+    g_image.therm_width = therm_width;
+    g_image.therm_height = therm_height;
     fusion_get_image((uint32_t *)fusion_data, (uint32_t *)cam_data, (uint32_t *)therm_data);
     LOGE("fusion end");
 
