@@ -1,12 +1,10 @@
 package com.example.thermaleyes;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.Manifest;
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.graphics.Matrix;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
@@ -14,7 +12,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.SurfaceHolder;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -23,16 +20,15 @@ import android.widget.TextView;
 import com.herohan.uvcapp.CameraHelper;
 import com.herohan.uvcapp.ICameraHelper;
 import com.hjq.permissions.XXPermissions;
-import com.serenegiant.opengl.renderer.MirrorMode;
 import com.serenegiant.usb.Size;
 import com.serenegiant.usb.UVCCamera;
-import com.serenegiant.widget.AspectRatioSurfaceView;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+@RequiresApi(api = Build.VERSION_CODES.O)
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     private static final boolean CAM_DISPLAY = true;
     private static final boolean TEMP_DISPLAY = true;
@@ -69,7 +65,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     };
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
+    private final ThermalDevice mThermalDevice = new ThermalDevice() {
+        @Override
+        public void onFrame(ByteBuffer frame, float maxTemp, float minTemp) {
+            Log.i(TAG, "Get temperature frame");
+
+            byte[] therm_data = new byte[frame.remaining()];
+            frame.get(therm_data);
+            mImageFusion.putThermalImage(therm_data);
+
+            if (TEMP_DISPLAY) {
+                runOnUiThread(() -> {
+                    mMaxTempTestView.setText(String.format("max: %.2f", maxTemp));
+                    mMinTempTestView.setText(String.format("min: %.2f", minTemp));
+//                        mThermalCameraPreview.setImageBitmap(scaleBm);
+                });
+            }
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -88,31 +102,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 });
 
         mNv21ToBitmap = new NV21ToBitmap(this);
-        UsbManager usbManager = (UsbManager)getSystemService(USB_SERVICE);
-        ThermalDevice thermalDevice = new ThermalDevice(usbManager) {
-            @Override
-            public void onFrame(ByteBuffer frame, float maxTemp, float minTemp) {
-                Log.i(TAG, "Get temperature frame");
-
-                byte[] therm_data = new byte[frame.remaining()];
-                frame.get(therm_data);
-                mImageFusion.putThermalImage(therm_data);
-
-                if (TEMP_DISPLAY) {
-                    runOnUiThread(() -> {
-                        mMaxTempTestView.setText(String.format("max: %.2f", maxTemp));
-                        mMinTempTestView.setText(String.format("min: %.2f", minTemp));
-//                        mThermalCameraPreview.setImageBitmap(scaleBm);
-                    });
-                }
-            }
-        };
-
-        try {
-            thermalDevice.connect();
-        } catch (IOException e) {
-            Log.e(TAG, "Usb connect failed");
-        }
+        mThermalDevice.setUsbManager((UsbManager)getSystemService(USB_SERVICE));
     }
 
     private void initViews() {
@@ -256,6 +246,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (list != null && list.size() > 0) {
                     mCameraHelper.selectDevice(list.get(0));
                 }
+            }
+
+            try {
+                mThermalDevice.connect();
+            } catch (IOException e) {
+                Log.e(TAG, "Usb connect failed");
             }
         } else if (v.getId() == R.id.btnCloseCamera) {
             // close camera

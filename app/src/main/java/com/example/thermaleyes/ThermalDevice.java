@@ -28,9 +28,10 @@ public abstract class ThermalDevice {
     private final static int PRODUCT_ID = 22336;
     private final static int IMAGE_PIXEL = IMAGE_WIDTH * IMAGE_HEIGHT;
     private final static int DATA_LEN = IMAGE_PIXEL * 2 + 2;
-    private final static float MAX_RANGE = 20.0f;
 
-    private final UsbManager myUsbManager;
+    private final static float MAX_RANGE = 20.0f;
+    private UsbManager myUsbManager;
+
     private final UsbSerialInterface.UsbReadCallback mCallback =
             arg0 -> {
                 Log.i(TAG, "Get data from device");
@@ -58,12 +59,12 @@ public abstract class ThermalDevice {
                 onFrame(tempImage, maxTemp, minTemp);
             };
 
-    public ThermalDevice(UsbManager usbManager) {
-        this.myUsbManager = usbManager;
-    }
-
     /* RGB888 temperature image */
     public abstract void onFrame(ByteBuffer frame, float maxTemp, float minTemp);
+
+    public void setUsbManager(UsbManager usbManager) {
+        myUsbManager = usbManager;
+    }
 
     public void connect() throws IOException {
         UsbDevice device = enumerateDevice(VENDOR_ID, PRODUCT_ID);
