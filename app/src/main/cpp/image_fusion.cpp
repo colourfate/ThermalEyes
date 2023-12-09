@@ -4,6 +4,7 @@
 #include <opencv2/opencv.hpp>
 
 using namespace cv;
+using namespace std;
 
 // Write C++ code here.
 //
@@ -23,17 +24,16 @@ using namespace cv;
 //      }
 //    }
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, "jni_c", __VA_ARGS__)
-#define MIN(i, j) (((i) < (j)) ? (i) : (j))
-#define MAX(i, j) (((i) > (j)) ? (i) : (j))
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, "jni_c", __VA_ARGS__)
+
 #define CLIP(x, a, b) ((x) < (a) ? (a) : MIN(x, b))
+#define CAM_UV_K 1
+#define THERM_UV_K 0.5
+#define CAM_Y_K 1
+#define THERM_Y_K 0.5
 
-#define CAM_UV_K 0
-#define THERM_UV_K 1
-#define CAM_Y_K 0
-#define THERM_Y_K 1
-
-#define REF_LEN 4
 #define RANGE 255
+#define SEARCH_ALIGN 15
 
 #define COLOR(v, c) (((v) >> (8 * (c))) & 0xff)
 
@@ -48,6 +48,13 @@ typedef struct {
 } image_data;
 
 static image_data g_image;
+
+void image_match_thermal_template(Mat &im_therm_template, Mat &im_cam, Mat &im_therm)
+{
+    Rect cut(0, SEARCH_ALIGN, 640, 480 - SEARCH_ALIGN);
+    Mat im_therm_cut = im_therm(cut);
+    copyMakeBorder(im_therm_cut, im_therm_template, 0, SEARCH_ALIGN,0, 0, BORDER_REPLICATE);
+}
 
 void color_map_fusion(uint8_t *fusion_data, const uint8_t *cam_data, const uint8_t *therm_data)
 {
@@ -70,10 +77,10 @@ void color_map_fusion(uint8_t *fusion_data, const uint8_t *cam_data, const uint8
 
             //u_off = -0.1687 * (red - 128) - 0.3313 * (green - 128) + 0.5 * (blue - 128);
             //v_off = 0.5 * (red - 128) - 0.4187 * (green - 128) - 0.0813 * (blue - 128);
-            //u_off = -0.148 * red - 0.291 * green + 0.439 * blue;
-            //v_off = 0.439 * red - 0.368 * green - 0.071 * blue;
-            u_off = -0.148 * red - 0.291 * green + 0.439 * blue + 128;
-            v_off = 0.439 * red - 0.368 * green - 0.071 * blue + 128;
+            u_off = -0.148 * red - 0.291 * green + 0.439 * blue;
+            v_off = 0.439 * red - 0.368 * green - 0.071 * blue;
+            //u_off = -0.148 * red - 0.291 * green + 0.439 * blue + 128;
+            //v_off = 0.439 * red - 0.368 * green - 0.071 * blue + 128;
 
             u_val = (int)(cam_uv[u] * CAM_UV_K + u_off * THERM_UV_K);
             v_val = (int)(cam_uv[v] * CAM_UV_K + v_off * THERM_UV_K);
@@ -93,8 +100,8 @@ void color_map_fusion(uint8_t *fusion_data, const uint8_t *cam_data, const uint8
             uint8_t red = therm_y[pos * 3 + 2];
 
             //int8_t y_off = 0.299 * (red - 128) + 0.587 * (green - 128) + 0.114 * (blue - 128);
-            //int y_off = 0.257 * red + 0.504 * green + 0.098 * blue + 16 - 128;
-            int y_off = 0.257 * red + 0.504 * green + 0.098 * blue + 16;
+            int y_off = 0.257 * red + 0.504 * green + 0.098 * blue + 16 - 128;
+            //int y_off = 0.257 * red + 0.504 * green + 0.098 * blue + 16;
 
             y_val = (int)(cam_y[pos] * CAM_Y_K + y_off * THERM_Y_K);
             fusion_y[pos] = (uint8_t)CLIP(y_val, 0, 255);
@@ -112,10 +119,17 @@ void fusion_get_image(uint32_t *fusion_data, const uint32_t *cam_data, const uin
     flip(im_therm, im_therm_mirror, 1);
     resize(im_therm_mirror, im_therm_scale, Size(im_cam.cols, im_cam.rows), 0, 0, INTER_LINEAR);
 
+    Mat im_therm_tmp;
+    //Rect cut(im_therm_scale.cols - 640, im_therm_scale.rows - 480, 640, 480);
+    //Mat im_therm_cut = im_therm_scale(cut);
+    image_match_thermal_template(im_therm_tmp, im_cam, im_therm_scale);
+    //im_therm_tmp = im_therm_cut;
+
     Mat im_cam_l;
     GaussianBlur(im_cam, im_cam_l, Size(11, 11), 5, 5);
     Mat im_cam_h = im_cam - im_cam_l;
-    Mat im_fusion = im_cam_h + im_therm_scale;
+    Mat im_fusion = im_cam_h + im_therm_tmp;
+
     Mat im_fusion_color;
     applyColorMap(im_fusion, im_fusion_color, COLORMAP_JET);
 
