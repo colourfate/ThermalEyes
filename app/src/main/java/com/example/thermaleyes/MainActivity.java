@@ -5,7 +5,12 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.Manifest;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.Point;
+import android.graphics.Rect;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.os.Build;
@@ -46,8 +51,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             ThermalDevice.IMAGE_WIDTH, ThermalDevice.IMAGE_HEIGHT) {
 
         @Override
-        public void onFrame(byte[] frame) {
-            Bitmap srcBm = mNv21ToBitmap.nv21ToBitmap(frame, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+        public void onFrame(FrameInfo frame) {
+            Bitmap srcBm = mNv21ToBitmap.nv21ToBitmap(frame.data, DEFAULT_WIDTH, DEFAULT_HEIGHT);
 
             DisplayMetrics dm = new DisplayMetrics();
             getWindowManager().getDefaultDisplay().getMetrics(dm);
@@ -59,6 +64,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             Bitmap scaleBm = Bitmap.createBitmap(srcBm,
                     0, 0, srcBm.getWidth(), srcBm.getHeight(), matrix, true);
 
+            drawTemptationTrack(scaleBm, frame);
+
             runOnUiThread(() -> {
                 mFusionImagePreview.setImageBitmap(scaleBm);
             });
@@ -67,18 +74,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private final ThermalDevice mThermalDevice = new ThermalDevice() {
         @Override
-        public void onFrame(ByteBuffer frame, float maxTemp, float minTemp) {
+        public void onFrame(ByteBuffer frame, float maxTemp, float minTemp, int maxLoc, int minLoc) {
             Log.i(TAG, "Get temperature frame");
 
-            byte[] therm_data = new byte[frame.remaining()];
-            frame.get(therm_data);
-            mImageFusion.putThermalImage(therm_data);
+            FrameInfo thermInfo = new FrameInfo();
+            thermInfo.data = new byte[frame.remaining()];
+            thermInfo.width = ThermalDevice.IMAGE_WIDTH;
+            thermInfo.height = ThermalDevice.IMAGE_HEIGHT;
+            thermInfo.maxVal = maxTemp;
+            thermInfo.minVal = minTemp;
+            /* Thermal location need to mirror */
+            thermInfo.maxLoc = new Point(ThermalDevice.IMAGE_WIDTH - maxLoc % ThermalDevice.IMAGE_WIDTH,
+                    maxLoc / ThermalDevice.IMAGE_WIDTH);
+            thermInfo.minLoc = new Point(ThermalDevice.IMAGE_WIDTH - minLoc % ThermalDevice.IMAGE_WIDTH,
+                    minLoc / ThermalDevice.IMAGE_WIDTH);
+            frame.get(thermInfo.data);
+
+            mImageFusion.putThermalImage(thermInfo);
 
             if (TEMP_DISPLAY) {
                 runOnUiThread(() -> {
                     mMaxTempTestView.setText(String.format("max: %.2f", maxTemp));
                     mMinTempTestView.setText(String.format("min: %.2f", minTemp));
-//                        mThermalCameraPreview.setImageBitmap(scaleBm);
                 });
             }
         }
@@ -103,6 +120,32 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         mNv21ToBitmap = new NV21ToBitmap(this);
         mThermalDevice.setUsbManager((UsbManager)getSystemService(USB_SERVICE));
+    }
+
+    private void drawTemptationTrack(Bitmap bitmap, FrameInfo frame) {
+        Canvas canvas = new Canvas(bitmap);
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(5f);
+        canvas.drawBitmap(bitmap, new Matrix(), paint);
+
+        float xScale = (float)bitmap.getWidth() / frame.width;
+        float yScale = (float)bitmap.getHeight() / frame.height;
+
+        Point[] tempCoordinate = { frame.maxLoc, frame.minLoc };
+        for (int i = 0; i < tempCoordinate.length; i++) {
+            int x = (int)(tempCoordinate[i].x * xScale);
+            int y = (int)(tempCoordinate[i].y * yScale);
+            Rect rect = new Rect(x, y, x + bitmap.getWidth() / ThermalDevice.IMAGE_WIDTH,
+                    y + bitmap.getHeight() / ThermalDevice.IMAGE_HEIGHT);
+
+            if (i == 0) {
+                paint.setColor(Color.RED);
+            } else {
+                paint.setColor(Color.BLUE);
+            }
+            canvas.drawRect(rect, paint);
+        }
     }
 
     private void initViews() {
@@ -186,9 +229,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             Size size = mCameraHelper.getPreviewSize();
             mCameraHelper.setFrameCallback(frame -> {
-                byte[] nv21 = new byte[frame.remaining()];
-                frame.get(nv21,0,nv21.length);
-                mImageFusion.putCameraImage(nv21);
+                FrameInfo frameInfo = new FrameInfo();
+                frameInfo.data = new byte[frame.remaining()];
+                frameInfo.width = size.width;
+                frameInfo.height = size.height;
+
+                frame.get(frameInfo.data);
+                mImageFusion.putCameraImage(frameInfo);
 
                 if (CAM_DISPLAY) {
 //                    Bitmap bitmap = mNv21ToBitmap.nv21ToBitmap(nv21, size.width, size.height);

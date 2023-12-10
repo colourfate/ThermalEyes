@@ -28,18 +28,33 @@ using namespace std;
 
 #define CLIP(x, a, b) ((x) < (a) ? (a) : MIN(x, b))
 #define CAM_UV_K 1
-#define THERM_UV_K 0.5
+#define THERM_UV_K 1
 #define CAM_Y_K 1
-#define THERM_Y_K 0.5
+#define THERM_Y_K 1
 
 #define RANGE 255
 #define SEARCH_ALIGN 15
 
-#define COLOR(v, c) (((v) >> (8 * (c))) & 0xff)
+typedef enum {
+    FUSION_MODE_COLOUR_MAP,
+    FUSION_MODE_HIGH_FREQ_EXTRACT,
+    FUSION_MODE_MAX
+} fusion_mode;
 
-enum { Y, COLOR_MAX };
+typedef enum {
+    HIGH_FREQ_RATIO_LOW,
+    HIGH_FREQ_RATIO_MEDIUM,
+    HIGH_FREQ_RATIO_HIGH,
+    HIGH_FREQ_RATIO_MAX
+} high_freq_ratio;
 
 typedef struct {
+    fusion_mode mode;
+    high_freq_ratio ratio;
+    int color_tab;
+    float cam_y_k, cam_uv_k;
+    float therm_y_k, therm_uv_k;
+    uint32_t parallax_correct;
     uint32_t cam_width, cam_height;
     uint32_t therm_width, therm_height;
     uint8_t *result;
@@ -47,7 +62,16 @@ typedef struct {
     const uint8_t *therm;
 } image_data;
 
-static image_data g_image;
+static image_data g_image = {
+        .mode = FUSION_MODE_COLOUR_MAP,
+        .ratio = HIGH_FREQ_RATIO_MEDIUM,
+        .color_tab = COLORMAP_JET,
+        .cam_y_k = 1,
+        .cam_uv_k = 1,
+        .therm_y_k = 0.5,
+        .therm_uv_k = 0.5,
+        .parallax_correct = 15
+};
 
 void image_match_thermal_template(Mat &im_therm_template, Mat &im_cam, Mat &im_therm)
 {
@@ -120,18 +144,16 @@ void fusion_get_image(uint32_t *fusion_data, const uint32_t *cam_data, const uin
     resize(im_therm_mirror, im_therm_scale, Size(im_cam.cols, im_cam.rows), 0, 0, INTER_LINEAR);
 
     Mat im_therm_tmp;
-    //Rect cut(im_therm_scale.cols - 640, im_therm_scale.rows - 480, 640, 480);
-    //Mat im_therm_cut = im_therm_scale(cut);
     image_match_thermal_template(im_therm_tmp, im_cam, im_therm_scale);
-    //im_therm_tmp = im_therm_cut;
+    //im_therm_tmp = im_therm_scale;
 
     Mat im_cam_l;
-    GaussianBlur(im_cam, im_cam_l, Size(11, 11), 5, 5);
+    GaussianBlur(im_cam, im_cam_l, Size(15, 15), 7, 7);
     Mat im_cam_h = im_cam - im_cam_l;
     Mat im_fusion = im_cam_h + im_therm_tmp;
 
     Mat im_fusion_color;
-    applyColorMap(im_fusion, im_fusion_color, COLORMAP_JET);
+    applyColorMap(im_fusion, im_fusion_color, COLORMAP_PLASMA);
 
     color_map_fusion((uint8_t *)fusion_data, (uint8_t *)cam_data, im_fusion_color.data);
 }

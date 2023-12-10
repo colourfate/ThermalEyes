@@ -1,7 +1,5 @@
 package com.example.thermaleyes;
 
-import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
@@ -12,7 +10,6 @@ import androidx.annotation.RequiresApi;
 
 import com.felhr.usbserial.UsbSerialDevice;
 import com.felhr.usbserial.UsbSerialInterface;
-import com.felhr.utils.ProtocolBuffer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -49,18 +46,25 @@ public abstract class ThermalDevice {
 
                 float maxTemp = tempData[0];
                 float minTemp = tempData[0];
-                for (float t : tempData) {
-                    maxTemp = Math.max(maxTemp, t);
-                    minTemp = Math.min(minTemp, t);
+                int maxLoc = 0;
+                int minLoc = 0;
+                for (int i = 0; i < tempData.length; i++) {
+                    if (maxTemp < tempData[i]) {
+                        maxTemp = tempData[i];
+                        maxLoc = i;
+                    }
+                    if (minTemp > tempData[i]) {
+                        minTemp = tempData[i];
+                        minLoc = i;
+                    }
                 }
                 Log.i(TAG, "Max: " + maxTemp + " Min: " + minTemp);
 
                 ByteBuffer tempImage = getTemperatureImage(tempData, maxTemp, minTemp);
-                onFrame(tempImage, maxTemp, minTemp);
+                onFrame(tempImage, maxTemp, minTemp, maxLoc, minLoc);
             };
 
-    /* RGB888 temperature image */
-    public abstract void onFrame(ByteBuffer frame, float maxTemp, float minTemp);
+    public abstract void onFrame(ByteBuffer frame, float maxTemp, float minTemp, int maxLoc, int minLoc);
 
     public void setUsbManager(UsbManager usbManager) {
         myUsbManager = usbManager;

@@ -1,8 +1,8 @@
 package com.example.thermaleyes;
 
+import android.graphics.Point;
 import android.os.Build;
 import android.util.Log;
-import android.util.Size;
 
 import androidx.annotation.RequiresApi;
 
@@ -11,8 +11,8 @@ import java.util.LinkedList;
 public abstract class ImageFusion extends Thread {
     private static final int QUEUE_LEN = 2;
     private volatile boolean mThreadRun = true;
-    private final LinkedList<byte[]> mCameraQueue = new LinkedList<>();
-    private final LinkedList<byte[]> mThermalQueue = new LinkedList<>();
+    private final LinkedList<FrameInfo> mCameraQueue = new LinkedList<>();
+    private final LinkedList<FrameInfo> mThermalQueue = new LinkedList<>();
     private static final String TAG = ImageFusion.class.getSimpleName();
     private final int mCamWidth;
     private final int mCamHeight;
@@ -20,7 +20,7 @@ public abstract class ImageFusion extends Thread {
     private final int mThermHeight;
 
     // NV21
-    public abstract void onFrame(byte[] argbFrame);
+    public abstract void onFrame(FrameInfo frame);
 
     public ImageFusion(int camWidth, int camHeight, int thermWidth, int thermHeight) {
         mCamWidth = camWidth;
@@ -29,9 +29,9 @@ public abstract class ImageFusion extends Thread {
         mThermHeight = thermHeight;
     }
 
-    public void putCameraImage(byte[] frame) {
-        if (frame.length != mCamWidth * mCamHeight * 3 / 2) {
-            Log.e(TAG, "Invalid camera frame length");
+    public void putCameraImage(FrameInfo frame) {
+        if (frame.data.length != mCamWidth * mCamHeight * 3 / 2) {
+            Log.e(TAG, "Invalid camera frame length: " + frame.data.length);
             return;
         }
 
@@ -40,9 +40,9 @@ public abstract class ImageFusion extends Thread {
         }
     }
 
-    public void putThermalImage(byte[] frame) {
-        if (frame.length != mThermWidth * mThermHeight) {
-            Log.e(TAG, "Invalid thermal frame length");
+    public void putThermalImage(FrameInfo frame) {
+        if (frame.data.length != mThermWidth * mThermHeight) {
+            Log.e(TAG, "Invalid thermal frame length: " + frame.data.length);
             return;
         }
 
@@ -54,7 +54,7 @@ public abstract class ImageFusion extends Thread {
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public void run() {
-        byte[] cameraFrame, thermalFrame;
+        FrameInfo cameraFrame, thermalFrame;
 
         synchronized(mThermalQueue) {
             thermalFrame = getImage(mThermalQueue);
@@ -71,14 +71,21 @@ public abstract class ImageFusion extends Thread {
                 }
             }
 
-            Log.e(TAG, "get camera data: " + Integer.toHexString(cameraFrame[0]));
-            Log.e(TAG, "get thermal data: " + Integer.toHexString(thermalFrame[0]));
+            FrameInfo fusionFrame = new FrameInfo();
+            fusionFrame.data = new byte[cameraFrame.data.length];
+            fusionFrame.width = cameraFrame.width;
+            fusionFrame.height = cameraFrame.height;
+            fusionFrame.maxVal = thermalFrame.maxVal;
+            fusionFrame.minVal = thermalFrame.minVal;
+            float xScale = (float)cameraFrame.width / thermalFrame.width;
+            float yScale = (float)cameraFrame.height / thermalFrame.height;
+            fusionFrame.maxLoc = new Point((int)(thermalFrame.maxLoc.x * xScale), (int)(thermalFrame.maxLoc.y * yScale) - 15);
+            fusionFrame.minLoc = new Point((int)(thermalFrame.minLoc.x * xScale), (int)(thermalFrame.minLoc.y * yScale) - 15);
 
-            byte[] fusionData = new byte[cameraFrame.length];
-            getFusionImage(fusionData, cameraFrame, thermalFrame,
+            getFusionImage(fusionFrame.data, cameraFrame.data, thermalFrame.data,
                     mCamWidth, mCamHeight, mThermWidth, mThermHeight);
 
-            onFrame(fusionData);
+            onFrame(fusionFrame);
         }
     }
 
@@ -88,7 +95,7 @@ public abstract class ImageFusion extends Thread {
         //mCameraQueue.notifyAll();
     }
 
-    private void putImage(LinkedList<byte[]> queue, byte[] frame) {
+    private void putImage(LinkedList<FrameInfo> queue, FrameInfo frame) {
         if (queue.size() >= QUEUE_LEN) {
             queue.poll();
         }
@@ -96,7 +103,7 @@ public abstract class ImageFusion extends Thread {
         queue.notifyAll();
     }
 
-    private byte[] getImage(LinkedList<byte[]> queue) {
+    private FrameInfo getImage(LinkedList<FrameInfo> queue) {
         while (queue.size() == 0) {
             try {
                 queue.wait();
