@@ -7,6 +7,7 @@ import android.util.Log;
 import androidx.annotation.RequiresApi;
 
 import java.util.LinkedList;
+import java.util.Map;
 
 public abstract class ImageFusion extends Thread {
     private static final int QUEUE_LEN = 2;
@@ -49,6 +50,34 @@ public abstract class ImageFusion extends Thread {
         synchronized(mThermalQueue) {
             putImage(mThermalQueue, frame);
         }
+    }
+
+    public void setConfig(AlgorithmConfig config) {
+        setFusionMode(config.fusionMode);               // RadioButton
+        setFusionHighFreqRatio(config.highFreqRatio);   // SeekBar
+        setFusionColorTab(config.pseudoColorTab);       // RadioButton
+        setFusionParallaxOffset(config.parallaxOffset); // SeekBar
+
+        float[] paramTab = { config.camYK, config.camUVK, config.thermYK, config.thermUVK };
+        setFusionParams(paramTab);                      // SeekBar
+    }
+
+    public AlgorithmConfig getConfig() {
+        AlgorithmConfig config = new AlgorithmConfig();
+
+        config.fusionMode = getFusionMode();
+        config.highFreqRatio = getFusionHighFreqRatio();
+        config.pseudoColorTab = getFusionColorTab();
+        config.parallaxOffset = getFusionParallaxOffset();
+
+        float[] paramTab = new float[4];
+        getFusionParams(paramTab);
+        config.camYK = paramTab[0];
+        config.camUVK = paramTab[1];
+        config.thermYK = paramTab[2];
+        config.thermUVK = paramTab[3];
+
+        return config;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -121,4 +150,14 @@ public abstract class ImageFusion extends Thread {
 
     private native void getFusionImage(byte[] fusionData, byte[] camData, byte[] thermData,
                                        int camWidth, int camHeight, int thermWidth, int thermHeight);
+    private native void setFusionMode(int fusionMode);
+    private native int getFusionMode();
+    private native void setFusionHighFreqRatio(int highFreqRatio);
+    private native int getFusionHighFreqRatio();
+    private native void setFusionColorTab(int colorTab);
+    private native int getFusionColorTab();
+    private native void setFusionParallaxOffset(int offset);
+    private native int getFusionParallaxOffset();
+    private native void setFusionParams(float[] params);
+    private native void getFusionParams(float[] params);
 }

@@ -27,34 +27,29 @@ using namespace std;
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, "jni_c", __VA_ARGS__)
 
 #define CLIP(x, a, b) ((x) < (a) ? (a) : MIN(x, b))
-#define CAM_UV_K 1
-#define THERM_UV_K 1
-#define CAM_Y_K 1
-#define THERM_Y_K 1
 
 #define RANGE 255
-#define SEARCH_ALIGN 15
 
 typedef enum {
     FUSION_MODE_COLOUR_MAP,
     FUSION_MODE_HIGH_FREQ_EXTRACT,
     FUSION_MODE_MAX
-} fusion_mode;
+} image_fusion_mode;
 
 typedef enum {
     HIGH_FREQ_RATIO_LOW,
     HIGH_FREQ_RATIO_MEDIUM,
     HIGH_FREQ_RATIO_HIGH,
     HIGH_FREQ_RATIO_MAX
-} high_freq_ratio;
+} image_high_freq_ratio;
 
 typedef struct {
-    fusion_mode mode;
-    high_freq_ratio ratio;
+    image_fusion_mode mode;
+    image_high_freq_ratio ratio;
     int color_tab;
     float cam_y_k, cam_uv_k;
     float therm_y_k, therm_uv_k;
-    uint32_t parallax_correct;
+    uint32_t parallax_offset;
     uint32_t cam_width, cam_height;
     uint32_t therm_width, therm_height;
     uint8_t *result;
@@ -65,20 +60,13 @@ typedef struct {
 static image_data g_image = {
         .mode = FUSION_MODE_COLOUR_MAP,
         .ratio = HIGH_FREQ_RATIO_MEDIUM,
-        .color_tab = COLORMAP_JET,
+        .color_tab = COLORMAP_PLASMA,
         .cam_y_k = 1,
         .cam_uv_k = 1,
-        .therm_y_k = 0.5,
-        .therm_uv_k = 0.5,
-        .parallax_correct = 15
+        .therm_y_k = 1,
+        .therm_uv_k = 1,
+        .parallax_offset = 0
 };
-
-void image_match_thermal_template(Mat &im_therm_template, Mat &im_cam, Mat &im_therm)
-{
-    Rect cut(0, SEARCH_ALIGN, 640, 480 - SEARCH_ALIGN);
-    Mat im_therm_cut = im_therm(cut);
-    copyMakeBorder(im_therm_cut, im_therm_template, 0, SEARCH_ALIGN,0, 0, BORDER_REPLICATE);
-}
 
 void color_map_fusion(uint8_t *fusion_data, const uint8_t *cam_data, const uint8_t *therm_data)
 {
@@ -106,8 +94,8 @@ void color_map_fusion(uint8_t *fusion_data, const uint8_t *cam_data, const uint8
             //u_off = -0.148 * red - 0.291 * green + 0.439 * blue + 128;
             //v_off = 0.439 * red - 0.368 * green - 0.071 * blue + 128;
 
-            u_val = (int)(cam_uv[u] * CAM_UV_K + u_off * THERM_UV_K);
-            v_val = (int)(cam_uv[v] * CAM_UV_K + v_off * THERM_UV_K);
+            u_val = (int)(cam_uv[u] * g_image.cam_uv_k + u_off * g_image.therm_uv_k);
+            v_val = (int)(cam_uv[v] * g_image.cam_uv_k + v_off * g_image.therm_uv_k);
             fusion_uv[u] = (uint8_t)CLIP(u_val, 0, 255);
             fusion_uv[v] = (uint8_t)CLIP(v_val, 0, 255);
         }
@@ -127,7 +115,7 @@ void color_map_fusion(uint8_t *fusion_data, const uint8_t *cam_data, const uint8
             int y_off = 0.257 * red + 0.504 * green + 0.098 * blue + 16 - 128;
             //int y_off = 0.257 * red + 0.504 * green + 0.098 * blue + 16;
 
-            y_val = (int)(cam_y[pos] * CAM_Y_K + y_off * THERM_Y_K);
+            y_val = (int)(cam_y[pos] * g_image.cam_y_k + y_off * g_image.therm_y_k);
             fusion_y[pos] = (uint8_t)CLIP(y_val, 0, 255);
         }
     }
@@ -143,17 +131,19 @@ void fusion_get_image(uint32_t *fusion_data, const uint32_t *cam_data, const uin
     flip(im_therm, im_therm_mirror, 1);
     resize(im_therm_mirror, im_therm_scale, Size(im_cam.cols, im_cam.rows), 0, 0, INTER_LINEAR);
 
-    Mat im_therm_tmp;
-    image_match_thermal_template(im_therm_tmp, im_cam, im_therm_scale);
-    //im_therm_tmp = im_therm_scale;
+    Mat im_therm_border;
+    Rect cut(0, g_image.parallax_offset, 640, 480 - g_image.parallax_offset);
+    Mat im_therm_cut = im_therm_scale(cut);
+    copyMakeBorder(im_therm_cut, im_therm_border, 0, g_image.parallax_offset, 0, 0, BORDER_REPLICATE);
+    //im_therm_border = im_therm_scale;
 
     Mat im_cam_l;
     GaussianBlur(im_cam, im_cam_l, Size(15, 15), 7, 7);
     Mat im_cam_h = im_cam - im_cam_l;
-    Mat im_fusion = im_cam_h + im_therm_tmp;
+    Mat im_fusion = im_cam_h + im_therm_border;
 
     Mat im_fusion_color;
-    applyColorMap(im_fusion, im_fusion_color, COLORMAP_PLASMA);
+    applyColorMap(im_fusion, im_fusion_color, g_image.color_tab);
 
     color_map_fusion((uint8_t *)fusion_data, (uint8_t *)cam_data, im_fusion_color.data);
 }
@@ -181,4 +171,93 @@ Java_com_example_thermaleyes_ImageFusion_getFusionImage(JNIEnv *env, jobject thi
     env->ReleaseByteArrayElements(fusionData, fusion_data, 0);
     env->ReleaseByteArrayElements(camData, cam_data, 0);
     env->ReleaseByteArrayElements(thermData, therm_data, 0);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_thermaleyes_ImageFusion_setFusionMode(JNIEnv *env, jobject thiz, jint fusion_mode) {
+    if (fusion_mode >= FUSION_MODE_MAX) {
+        LOGE("Not support fusion mode: %d\n", fusion_mode);
+        return;
+    }
+
+    g_image.mode = (image_fusion_mode)fusion_mode;
+}
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_example_thermaleyes_ImageFusion_getFusionMode(JNIEnv *env, jobject thiz) {
+    return g_image.mode;
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_thermaleyes_ImageFusion_setFusionHighFreqRatio(JNIEnv *env, jobject thiz,
+                                                          jint high_freq_ratio) {
+    if (high_freq_ratio >= HIGH_FREQ_RATIO_MAX) {
+        LOGE("Not support high frequency ratio: %d\n", high_freq_ratio);
+        return;
+    }
+
+    g_image.ratio = (image_high_freq_ratio)high_freq_ratio;
+}
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_example_thermaleyes_ImageFusion_getFusionHighFreqRatio(JNIEnv *env, jobject thiz) {
+    return g_image.ratio;
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_thermaleyes_ImageFusion_setFusionColorTab(JNIEnv *env, jobject thiz, jint color_tab) {
+    if (color_tab > COLORMAP_DEEPGREEN) {
+        LOGE("Not support color tab: %d\n", color_tab);
+        return;
+    }
+
+    g_image.color_tab = color_tab;
+}
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_example_thermaleyes_ImageFusion_getFusionColorTab(JNIEnv *env, jobject thiz) {
+    return g_image.color_tab;
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_thermaleyes_ImageFusion_setFusionParallaxOffset(JNIEnv *env, jobject thiz,
+                                                                  jint offset) {
+    if (offset > 50) {
+        LOGE("Not support Parallax offset: %d\n", offset);
+        return;
+    }
+
+    g_image.parallax_offset = offset;
+}
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_example_thermaleyes_ImageFusion_getFusionParallaxOffset(JNIEnv *env, jobject thiz) {
+    return g_image.parallax_offset;
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_thermaleyes_ImageFusion_setFusionParams(JNIEnv *env, jobject thiz,
+                                                        jfloatArray params) {
+    jfloat *param_tab = (jfloat *)env->GetFloatArrayElements(params, 0);
+
+    g_image.cam_y_k = param_tab[0];
+    g_image.cam_uv_k = param_tab[1];
+    g_image.therm_y_k = param_tab[2];
+    g_image.therm_uv_k = param_tab[3];
+
+    env->ReleaseFloatArrayElements(params, param_tab, 0);
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_thermaleyes_ImageFusion_getFusionParams(JNIEnv *env, jobject thiz,
+                                                         jfloatArray params) {
+    jfloat *param_tab = (jfloat *)env->GetFloatArrayElements(params, 0);
+
+    param_tab[0] = g_image.cam_y_k;
+    param_tab[1] = g_image.cam_uv_k;
+    param_tab[2] = g_image.therm_y_k;
+    param_tab[3] = g_image.therm_uv_k;
+
+    env->ReleaseFloatArrayElements(params, param_tab, 0);
 }

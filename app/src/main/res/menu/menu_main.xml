@@ -1,0 +1,12 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.herohan.uvcapp.activity.MainActivity">
+
+    <item
+        android:id="@+id/action_control"
+        android:icon="@drawable/ic_action_control"
+        android:title="@string/action_control"
+        android:visible="true"
+        app:showAsAction="ifRoom" />
+</menu>

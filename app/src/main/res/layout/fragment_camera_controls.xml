@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_marginLeft="10dp"
+    android:layout_marginTop="60dp"
+    android:layout_marginRight="10dp"
+    android:layout_marginBottom="60dp"
+    android:background="#77000000">
+
+    <ScrollView
+        android:id="@+id/svCameraControlsContent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/btnCameraControlsCancel"
+        android:layout_marginBottom="10dp"
+        android:orientation="vertical"
+        android:paddingTop="10dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/FragmentCameraControlsTextLeft"
+                    android:text="HighFreq" />
+
+                <com.warkiz.widget.IndicatorSeekBar
+                    android:id="@+id/isbHighFreq"
+                    style="@style/FragmentCameraControlsSeekBar" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/FragmentCameraControlsTextLeft"
+                    android:text="ParallaxOffset" />
+
+                <com.warkiz.widget.IndicatorSeekBar
+                    android:id="@+id/isbParallaxOffset"
+                    style="@style/FragmentCameraControlsSeekBar" />
+            </LinearLayout>
+
+            <RadioGroup
+                android:id="@+id/rgFusionMode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:orientation="horizontal">
+
+                <RadioButton
+                    android:id="@+id/rbColorMap"
+                    style="@style/FragmentCameraControlsRadioButton"
+                    android:text="ColorMap" />
+
+                <RadioButton
+                    android:id="@+id/rbPseudoColor"
+                    style="@style/FragmentCameraControlsRadioButton"
+                    android:text="PseudoColor" />
+            </RadioGroup>
+
+            <RadioGroup
+                android:id="@+id/rgColorTab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:orientation="horizontal">
+
+                <RadioButton
+                    android:id="@+id/rbPLASMA"
+                    style="@style/FragmentCameraControlsRadioButton"
+                    android:text="PLASMA" />
+
+                <RadioButton
+                    android:id="@+id/rbJet"
+                    style="@style/FragmentCameraControlsRadioButton"
+                    android:text="Jet" />
+            </RadioGroup>
+        </LinearLayout>
+    </ScrollView>
+
+    <Button
+        android:id="@+id/btnCameraControlsCancel"
+        style="@style/FragmentCameraControlsBottomButton"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginLeft="50dp"
+        android:text="@string/camera_controls_button_close" />
+
+    <Button
+        android:id="@+id/btnCameraControlsReset"
+        style="@style/FragmentCameraControlsBottomButton"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginRight="50dp"
+        android:text="@string/camera_controls_button_reset" />
+</RelativeLayout>

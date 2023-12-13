@@ -53,7 +53,6 @@
     <string name="camera_controls_text_60hz">60Hz</string>
     <string name="camera_controls_button_close">Close</string>
     <string name="camera_controls_button_reset">Reset</string>
-
     <string name="btn_open">Open</string>
     <string name="btn_close">Close</string>
 </resources>

@@ -37,6 +37,9 @@ android {
             version '3.18.1'
         }
     }
+    viewBinding {
+        enabled true
+    }
 }
 
 dependencies {
@@ -47,6 +50,7 @@ dependencies {
     implementation 'com.herohan:UVCAndroid:1.0.5'
     implementation 'com.github.getActivity:XXPermissions:18.2'
     implementation 'com.github.felHR85:UsbSerial:6.1.0'
+    implementation 'com.github.warkiz.widget:indicatorseekbar:2.1.2'
     implementation project(path: ':OpenCV')
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'

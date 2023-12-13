@@ -17,6 +17,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -47,6 +49,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private TextView mMaxTempTestView, mMinTempTestView;
 
     private NV21ToBitmap mNv21ToBitmap;
+    private CameraControlsDialogFragment mControlsDialog;
+    private boolean mIsCameraConnected = true;
     private final ImageFusion mImageFusion = new ImageFusion(DEFAULT_WIDTH, DEFAULT_HEIGHT,
             ThermalDevice.IMAGE_WIDTH, ThermalDevice.IMAGE_HEIGHT) {
 
@@ -65,6 +69,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     0, 0, srcBm.getWidth(), srcBm.getHeight(), matrix, true);
 
             drawTemptationTrack(scaleBm, frame);
+            mIsCameraConnected = true;
 
             runOnUiThread(() -> {
                 mFusionImagePreview.setImageBitmap(scaleBm);
@@ -305,6 +310,48 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             if (mCameraHelper != null) {
                 mCameraHelper.closeCamera();
             }
+        }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_control) {
+            showCameraControlsDialog();
+        }
+
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        if (mIsCameraConnected) {
+            menu.findItem(R.id.action_control).setVisible(true);
+        } else {
+            menu.findItem(R.id.action_control).setVisible(false);
+        }
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    private void showCameraControlsDialog() {
+        if (mControlsDialog == null) {
+            mControlsDialog = new CameraControlsDialogFragment(mImageFusion);
+        }
+        // When DialogFragment is not showing
+        if (!mControlsDialog.isAdded()) {
+            mControlsDialog.show(getSupportFragmentManager(), "camera_controls");
         }
     }
 }
