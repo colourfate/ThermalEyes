@@ -99,13 +99,13 @@ public class CameraControlsDialogFragment extends DialogFragment {
         setColorTabRadioGroup(
                 mBinding.rgColorTab,
                 true,
-                new int[]{AlgorithmConfig.PSEUDO_COLOR_TAB_PLASMA, AlgorithmConfig.PSEUDO_COLOR_TAB_JET},
+                new int[]{ImageFusion.PSEUDO_COLOR_TAB_PLASMA, ImageFusion.PSEUDO_COLOR_TAB_JET},
                 imageFusion.getColorTab());
 
         setFusionModeRadioGroup(
                 mBinding.rgFusionMode,
                 true,
-                new int[]{AlgorithmConfig.FUSION_MODE_COLOR_MAP, AlgorithmConfig.FUSION_MODE_HIGH_FREQ_EXTRACT},
+                new int[]{ImageFusion.FUSION_MODE_COLOR_MAP, ImageFusion.FUSION_MODE_HIGH_FREQ_EXTRACT},
                 imageFusion.getMode());
     }
 
@@ -120,9 +120,9 @@ public class CameraControlsDialogFragment extends DialogFragment {
         mBinding.rgColorTab.setOnCheckedChangeListener((group, checkedId) -> {
             int colorTab;
             if (checkedId == R.id.rbPLASMA) {
-                colorTab = AlgorithmConfig.PSEUDO_COLOR_TAB_PLASMA;
+                colorTab = ImageFusion.PSEUDO_COLOR_TAB_PLASMA;
             } else {
-                colorTab = AlgorithmConfig.PSEUDO_COLOR_TAB_JET;
+                colorTab = ImageFusion.PSEUDO_COLOR_TAB_JET;
             }
             mImageFusion.setColorTab(colorTab);
         });
@@ -130,9 +130,9 @@ public class CameraControlsDialogFragment extends DialogFragment {
         mBinding.rgFusionMode.setOnCheckedChangeListener((group, checkedId) -> {
             int fusionMode;
             if (checkedId == R.id.rbColorMap) {
-                fusionMode = AlgorithmConfig.FUSION_MODE_COLOR_MAP;
+                fusionMode = ImageFusion.FUSION_MODE_COLOR_MAP;
             } else {
-                fusionMode = AlgorithmConfig.FUSION_MODE_HIGH_FREQ_EXTRACT;
+                fusionMode = ImageFusion.FUSION_MODE_HIGH_FREQ_EXTRACT;
             }
             mImageFusion.setMode(fusionMode);
         });
@@ -155,10 +155,10 @@ public class CameraControlsDialogFragment extends DialogFragment {
         radioGroup.setEnabled(isEnable);
         if (isEnable) {
             switch (value) {
-                case AlgorithmConfig.PSEUDO_COLOR_TAB_PLASMA:
+                case ImageFusion.PSEUDO_COLOR_TAB_PLASMA:
                     radioGroup.check(R.id.rbPLASMA);
                     break;
-                case AlgorithmConfig.PSEUDO_COLOR_TAB_JET:
+                case ImageFusion.PSEUDO_COLOR_TAB_JET:
                     radioGroup.check(R.id.rbJet);
                     break;
             }
@@ -169,10 +169,10 @@ public class CameraControlsDialogFragment extends DialogFragment {
         radioGroup.setEnabled(isEnable);
         if (isEnable) {
             switch (value) {
-                case AlgorithmConfig.FUSION_MODE_COLOR_MAP:
+                case ImageFusion.FUSION_MODE_COLOR_MAP:
                     radioGroup.check(R.id.rbColorMap);
                     break;
-                case AlgorithmConfig.FUSION_MODE_HIGH_FREQ_EXTRACT:
+                case ImageFusion.FUSION_MODE_HIGH_FREQ_EXTRACT:
                     radioGroup.check(R.id.rbPseudoColor);
                     break;
             }

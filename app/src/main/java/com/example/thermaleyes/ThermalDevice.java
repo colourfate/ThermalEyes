@@ -35,10 +35,7 @@ public abstract class ThermalDevice {
 
                 if (arg0.length != DATA_LEN ||
                         arg0[arg0.length - 2] != -128 || arg0[arg0.length - 1] != 0) {
-                    //Log.e(TAG, "Receive invalid data, len: " + arg0.length + " EOF: " +
-                    //        Integer.toHexString(arg0[arg0.length - 2]) + ", " +
-                    //        Integer.toHexString(arg0[arg0.length - 1]));
-                    Log.e(TAG, "Receive invalid data");
+                    Log.e(TAG, "Receive invalid data, len: " + arg0.length);
                     return;
                 }
 
@@ -139,8 +136,6 @@ public abstract class ThermalDevice {
             tempData[i] = ((short)(highByte << 8 | lowByte)) / 100.0f;
         }
 
-        Log.i(TAG, Integer.toHexString(thermalData[0]) + " " +
-                Integer.toHexString(thermalData[1]) + " --> " + tempData[0]);
         return tempData;
     }
 

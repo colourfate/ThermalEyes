@@ -19,7 +19,17 @@ public abstract class ImageFusion extends Thread {
     private final int mCamHeight;
     private final int mThermWidth;
     private final int mThermHeight;
-    private AlgorithmConfig mAlgoConfig;
+    private final AlgorithmConfig mAlgoConfig;
+
+    public static final int FUSION_MODE_COLOR_MAP = 0;
+    public static final int FUSION_MODE_HIGH_FREQ_EXTRACT = 1;
+
+    public static final int HIGH_FREQ_RATIO_LOW = 0;
+    public static final int HIGH_FREQ_RATIO_MEDIUM = 1;
+    public static final int HIGH_FREQ_RATIO_HIGH = 2;
+
+    public static final int PSEUDO_COLOR_TAB_JET = 2;
+    public static final int PSEUDO_COLOR_TAB_PLASMA = 15;
 
     // NV21
     public abstract void onFrame(FrameInfo frame);
@@ -220,6 +230,17 @@ public abstract class ImageFusion extends Thread {
         }
 
         return queue.poll();
+    }
+
+    private class AlgorithmConfig {
+        public int fusionMode;
+        public int highFreqRatio;
+        public int pseudoColorTab;
+        public int parallaxOffset;
+        public float camYK;
+        public float camUVK;
+        public float thermYK;
+        public float thermUVK;
     }
 
     static {

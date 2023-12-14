@@ -173,13 +173,13 @@ Java_com_example_thermaleyes_ImageFusion_getFusionImage(JNIEnv *env, jobject thi
     jbyte *therm_data = (jbyte *)env->GetByteArrayElements(thermData, 0);
 
     /* 数据融合 */
-    LOGE("fusion start");
+    LOGI("fusion start");
     g_image.cam_width = cam_width;
     g_image.cam_height = cam_height;
     g_image.therm_width = therm_width;
     g_image.therm_height = therm_height;
     fusion_get_image((uint32_t *)fusion_data, (uint32_t *)cam_data, (uint32_t *)therm_data);
-    LOGE("fusion end");
+    LOGI("fusion end");
 
     env->ReleaseByteArrayElements(fusionData, fusion_data, 0);
     env->ReleaseByteArrayElements(camData, cam_data, 0);

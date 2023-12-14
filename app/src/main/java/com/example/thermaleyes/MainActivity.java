@@ -80,8 +80,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private final ThermalDevice mThermalDevice = new ThermalDevice() {
         @Override
         public void onFrame(ByteBuffer frame, float maxTemp, float minTemp, int maxLoc, int minLoc) {
-            Log.i(TAG, "Get temperature frame");
-
             FrameInfo thermInfo = new FrameInfo();
             thermInfo.data = new byte[frame.remaining()];
             thermInfo.width = ThermalDevice.IMAGE_WIDTH;
