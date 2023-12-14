@@ -19,6 +19,7 @@ public abstract class ImageFusion extends Thread {
     private final int mCamHeight;
     private final int mThermWidth;
     private final int mThermHeight;
+    private AlgorithmConfig mAlgoConfig;
 
     // NV21
     public abstract void onFrame(FrameInfo frame);
@@ -28,6 +29,7 @@ public abstract class ImageFusion extends Thread {
         mCamHeight = camHeight;
         mThermWidth = thermWidth;
         mThermHeight = thermHeight;
+        mAlgoConfig = getConfig();
     }
 
     public void putCameraImage(FrameInfo frame) {
@@ -52,7 +54,79 @@ public abstract class ImageFusion extends Thread {
         }
     }
 
-    public void setConfig(AlgorithmConfig config) {
+    public void setCamYK(float camYK) {
+        mAlgoConfig.camYK = camYK;
+        setConfig(mAlgoConfig);
+    }
+
+    public float getCamYK() {
+        return mAlgoConfig.camYK;
+    }
+
+    public void setCamUVK(float camUVK) {
+        mAlgoConfig.camUVK = camUVK;
+        setConfig(mAlgoConfig);
+    }
+
+    public float getCamUVK() {
+        return mAlgoConfig.camUVK;
+    }
+
+    public void setThermYK(float thermYK) {
+        mAlgoConfig.thermYK = thermYK;
+        setConfig(mAlgoConfig);
+    }
+
+    public float getThermYK() {
+        return mAlgoConfig.thermYK;
+    }
+
+    public void setThermUVK(float thermUVK) {
+        mAlgoConfig.thermUVK = thermUVK;
+        setConfig(mAlgoConfig);
+    }
+
+    public float getThermUVK() {
+        return mAlgoConfig.thermUVK;
+    }
+
+    public void setMode(int mode) {
+        mAlgoConfig.fusionMode = mode;
+        setConfig(mAlgoConfig);
+    }
+
+    public int getMode() {
+        return mAlgoConfig.fusionMode;
+    }
+
+    public void setHighFreqRatio(int ratio) {
+        mAlgoConfig.highFreqRatio = ratio;
+        setConfig(mAlgoConfig);
+    }
+
+    public int getHighFreqRatio() {
+        return mAlgoConfig.highFreqRatio;
+    }
+
+    public void setColorTab(int colorTab) {
+        mAlgoConfig.pseudoColorTab = colorTab;
+        setConfig(mAlgoConfig);
+    }
+
+    public int getColorTab() {
+        return mAlgoConfig.pseudoColorTab;
+    }
+
+    public void setParallaxOffset(int offset) {
+        mAlgoConfig.parallaxOffset = offset;
+        setConfig(mAlgoConfig);
+    }
+
+    public int getParallaxOffset() {
+        return mAlgoConfig.parallaxOffset;
+    }
+
+    private void setConfig(AlgorithmConfig config) {
         setFusionMode(config.fusionMode);               // RadioButton
         setFusionHighFreqRatio(config.highFreqRatio);   // SeekBar
         setFusionColorTab(config.pseudoColorTab);       // RadioButton
@@ -62,7 +136,7 @@ public abstract class ImageFusion extends Thread {
         setFusionParams(paramTab);                      // SeekBar
     }
 
-    public AlgorithmConfig getConfig() {
+    private AlgorithmConfig getConfig() {
         AlgorithmConfig config = new AlgorithmConfig();
 
         config.fusionMode = getFusionMode();
@@ -78,6 +152,10 @@ public abstract class ImageFusion extends Thread {
         config.thermUVK = paramTab[3];
 
         return config;
+    }
+
+    public void resetConfig() {
+
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)

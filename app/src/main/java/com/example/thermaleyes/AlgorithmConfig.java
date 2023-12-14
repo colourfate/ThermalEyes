@@ -1,8 +1,8 @@
 package com.example.thermaleyes;
 
 public class AlgorithmConfig {
-    public static final int COLOR_MAP_MODE = 0;
-    public static final int HIGH_FREQ_EXTRACT_MODE = 1;
+    public static final int FUSION_MODE_COLOR_MAP = 0;
+    public static final int FUSION_MODE_HIGH_FREQ_EXTRACT = 1;
 
     public static final int HIGH_FREQ_RATIO_LOW = 0;
     public static final int HIGH_FREQ_RATIO_MEDIUM = 1;

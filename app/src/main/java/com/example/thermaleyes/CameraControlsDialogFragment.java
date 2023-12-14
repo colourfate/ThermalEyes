@@ -15,13 +15,8 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 
 import com.example.thermaleyes.databinding.FragmentCameraControlsBinding;
-import com.herohan.uvcapp.ICameraHelper;
-import com.serenegiant.usb.UVCControl;
 import com.warkiz.widget.IndicatorSeekBar;
 import com.warkiz.widget.OnSeekChangeListener;
-import com.warkiz.widget.SeekParams;
-
-import java.lang.ref.WeakReference;
 
 public class CameraControlsDialogFragment extends DialogFragment {
 
@@ -67,7 +62,8 @@ public class CameraControlsDialogFragment extends DialogFragment {
             dismiss();
         });
         mBinding.btnCameraControlsReset.setOnClickListener(v -> {
-
+            resetAllControlParams(mImageFusion);
+            setAllControlParams(mImageFusion);
         });
     }
 
@@ -83,107 +79,67 @@ public class CameraControlsDialogFragment extends DialogFragment {
     }
 
     private void showCameraControls() {
-        AlgorithmConfig algoConfig = mImageFusion.getConfig();
-        setAllControlParams(algoConfig);
+        setAllControlParams(mImageFusion);
         setAllControlChangeListener();
     }
 
-    private void setAllControlParams(AlgorithmConfig algoConfig) {
-        // Brightness
+    private void setAllControlParams(ImageFusion imageFusion) {
         setSeekBarParams(
                 mBinding.isbHighFreq,
                 true,
                 new int[]{0, 3},
-                algoConfig.highFreqRatio);
+                imageFusion.getHighFreqRatio());
 
-        // Power Line Frequency
-        setRadioGroup(
+        setSeekBarParams(
+                mBinding.isbParallaxOffset,
+                true,
+                new int[]{0, 30},
+                imageFusion.getParallaxOffset());
+
+        setColorTabRadioGroup(
                 mBinding.rgColorTab,
                 true,
                 new int[]{AlgorithmConfig.PSEUDO_COLOR_TAB_PLASMA, AlgorithmConfig.PSEUDO_COLOR_TAB_JET},
-                algoConfig.pseudoColorTab);
+                imageFusion.getColorTab());
+
+        setFusionModeRadioGroup(
+                mBinding.rgFusionMode,
+                true,
+                new int[]{AlgorithmConfig.FUSION_MODE_COLOR_MAP, AlgorithmConfig.FUSION_MODE_HIGH_FREQ_EXTRACT},
+                imageFusion.getMode());
     }
 
     private void setAllControlChangeListener() {
-        mBinding.isbHighFreq.setOnSeekChangeListener((MyOnSeekChangeListener) seekParams -> {
-                AlgorithmConfig algoConfig = mImageFusion.getConfig();
-                algoConfig.highFreqRatio = seekParams.progress;
-                mImageFusion.setConfig(algoConfig);
-            }
+        mBinding.isbHighFreq.setOnSeekChangeListener(
+                (MyOnSeekChangeListener) seekParams -> mImageFusion.setHighFreqRatio(seekParams.progress));
+
+        mBinding.isbParallaxOffset.setOnSeekChangeListener(
+                (MyOnSeekChangeListener) seekParams -> mImageFusion.setParallaxOffset(seekParams.progress)
         );
 
         mBinding.rgColorTab.setOnCheckedChangeListener((group, checkedId) -> {
-            AlgorithmConfig algoConfig = mImageFusion.getConfig();
+            int colorTab;
             if (checkedId == R.id.rbPLASMA) {
-                algoConfig.pseudoColorTab = AlgorithmConfig.PSEUDO_COLOR_TAB_PLASMA;
+                colorTab = AlgorithmConfig.PSEUDO_COLOR_TAB_PLASMA;
             } else {
-                algoConfig.pseudoColorTab = AlgorithmConfig.PSEUDO_COLOR_TAB_JET;
+                colorTab = AlgorithmConfig.PSEUDO_COLOR_TAB_JET;
             }
-            mImageFusion.setConfig(algoConfig);
+            mImageFusion.setColorTab(colorTab);
+        });
+
+        mBinding.rgFusionMode.setOnCheckedChangeListener((group, checkedId) -> {
+            int fusionMode;
+            if (checkedId == R.id.rbColorMap) {
+                fusionMode = AlgorithmConfig.FUSION_MODE_COLOR_MAP;
+            } else {
+                fusionMode = AlgorithmConfig.FUSION_MODE_HIGH_FREQ_EXTRACT;
+            }
+            mImageFusion.setMode(fusionMode);
         });
     }
 
-    private void resetAllControlParams(UVCControl control) {
-        // Brightness
-        control.resetBrightness();
-
-        // Contrast
-        control.resetContrast();
-        // Contrast Auto
-        control.resetContrastAuto();
-
-        // Hue
-        control.resetHue();
-        // Hue Auto
-        control.resetHueAuto();
-
-        // Saturation
-        control.resetSaturation();
-
-        // Sharpness
-        control.resetSharpness();
-
-        // Gamma
-        control.resetGamma();
-
-        // White Balance
-        control.resetWhiteBalance();
-        // White Balance Auto
-        control.resetWhiteBalanceAuto();
-
-        // Backlight Compensation
-        control.resetBacklightComp();
-
-        // Gain
-        control.resetGain();
-
-        // Exposure Time
-        control.resetExposureTimeAbsolute();
-        // Auto-Exposure Mode
-        control.resetAutoExposureMode();
-
-        // Iris
-        control.resetIrisAbsolute();
-
-        // Focus
-        control.resetFocusAbsolute();
-        // Focus Auto
-        control.resetFocusAuto();
-
-        // Zoom
-        control.resetZoomAbsolute();
-
-        // Pan
-        control.resetPanAbsolute();
-
-        // Tilt
-        control.resetTiltAbsolute();
-
-        // Roll
-        control.resetRollAbsolute();
-
-        // Power Line Frequency
-        control.resetPowerlineFrequency();
+    private void resetAllControlParams(ImageFusion imageFusion) {
+        imageFusion.resetConfig();
     }
 
     private void setSeekBarParams(IndicatorSeekBar seekBar, boolean isEnable, int[] limit, int value) {
@@ -195,22 +151,29 @@ public class CameraControlsDialogFragment extends DialogFragment {
         }
     }
 
-    private void setCheckBoxParams(CheckBox checkBox, boolean isEnable, boolean isCheck) {
-        checkBox.setEnabled(isEnable);
-        if (isEnable) {
-            checkBox.setChecked(isCheck);
-        }
-    }
-
-    private void setRadioGroup(RadioGroup radioGroup, boolean isEnable, int[] limit, int value) {
+    private void setColorTabRadioGroup(RadioGroup radioGroup, boolean isEnable, int[] limit, int value) {
         radioGroup.setEnabled(isEnable);
         if (isEnable) {
             switch (value) {
-                case 1: // 50Hz
+                case AlgorithmConfig.PSEUDO_COLOR_TAB_PLASMA:
                     radioGroup.check(R.id.rbPLASMA);
                     break;
-                case 2: // 60Hz
+                case AlgorithmConfig.PSEUDO_COLOR_TAB_JET:
                     radioGroup.check(R.id.rbJet);
+                    break;
+            }
+        }
+    }
+
+    private void setFusionModeRadioGroup(RadioGroup radioGroup, boolean isEnable, int[] limit, int value) {
+        radioGroup.setEnabled(isEnable);
+        if (isEnable) {
+            switch (value) {
+                case AlgorithmConfig.FUSION_MODE_COLOR_MAP:
+                    radioGroup.check(R.id.rbColorMap);
+                    break;
+                case AlgorithmConfig.FUSION_MODE_HIGH_FREQ_EXTRACT:
+                    radioGroup.check(R.id.rbPseudoColor);
                     break;
             }
         }

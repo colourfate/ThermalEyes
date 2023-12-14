@@ -37,6 +37,7 @@ typedef enum {
 } image_fusion_mode;
 
 typedef enum {
+    HIGH_FREQ_RATIO_NONE,
     HIGH_FREQ_RATIO_LOW,
     HIGH_FREQ_RATIO_MEDIUM,
     HIGH_FREQ_RATIO_HIGH,
@@ -65,7 +66,7 @@ static image_data g_image = {
         .cam_uv_k = 1,
         .therm_y_k = 1,
         .therm_uv_k = 1,
-        .parallax_offset = 0
+        .parallax_offset = 15
 };
 
 void color_map_fusion(uint8_t *fusion_data, const uint8_t *cam_data, const uint8_t *therm_data)
@@ -87,12 +88,13 @@ void color_map_fusion(uint8_t *fusion_data, const uint8_t *cam_data, const uint8
             uint8_t green = therm_y[i * width * 2 * 3 + j * 2 * 3 + 1];
             uint8_t red = therm_y[i * width * 2 * 3 + j * 2 * 3 + 2];
 
-            //u_off = -0.1687 * (red - 128) - 0.3313 * (green - 128) + 0.5 * (blue - 128);
-            //v_off = 0.5 * (red - 128) - 0.4187 * (green - 128) - 0.0813 * (blue - 128);
             u_off = -0.148 * red - 0.291 * green + 0.439 * blue;
             v_off = 0.439 * red - 0.368 * green - 0.071 * blue;
-            //u_off = -0.148 * red - 0.291 * green + 0.439 * blue + 128;
-            //v_off = 0.439 * red - 0.368 * green - 0.071 * blue + 128;
+            if (g_image.mode == FUSION_MODE_HIGH_FREQ_EXTRACT) {
+                u_off += 128;
+                v_off += 128;
+                g_image.cam_uv_k = 0;
+            }
 
             u_val = (int)(cam_uv[u] * g_image.cam_uv_k + u_off * g_image.therm_uv_k);
             v_val = (int)(cam_uv[v] * g_image.cam_uv_k + v_off * g_image.therm_uv_k);
@@ -111,9 +113,11 @@ void color_map_fusion(uint8_t *fusion_data, const uint8_t *cam_data, const uint8
             uint8_t green = therm_y[pos * 3 + 1];
             uint8_t red = therm_y[pos * 3 + 2];
 
-            //int8_t y_off = 0.299 * (red - 128) + 0.587 * (green - 128) + 0.114 * (blue - 128);
             int y_off = 0.257 * red + 0.504 * green + 0.098 * blue + 16 - 128;
-            //int y_off = 0.257 * red + 0.504 * green + 0.098 * blue + 16;
+            if (g_image.mode == FUSION_MODE_HIGH_FREQ_EXTRACT) {
+                y_off += 128;
+                g_image.cam_y_k = 0;
+            }
 
             y_val = (int)(cam_y[pos] * g_image.cam_y_k + y_off * g_image.therm_y_k);
             fusion_y[pos] = (uint8_t)CLIP(y_val, 0, 255);
@@ -137,10 +141,19 @@ void fusion_get_image(uint32_t *fusion_data, const uint32_t *cam_data, const uin
     copyMakeBorder(im_therm_cut, im_therm_border, 0, g_image.parallax_offset, 0, 0, BORDER_REPLICATE);
     //im_therm_border = im_therm_scale;
 
-    Mat im_cam_l;
-    GaussianBlur(im_cam, im_cam_l, Size(15, 15), 7, 7);
-    Mat im_cam_h = im_cam - im_cam_l;
-    Mat im_fusion = im_cam_h + im_therm_border;
+    Mat im_fusion;
+    if (g_image.ratio > 0) {
+        Mat im_cam_l, im_cam_h;
+        // kernel size and sigma: 9|5, 15|7, 19|9
+        uint32_t sigma = g_image.ratio * 2 + 3;
+        uint32_t ksize = sigma * 2 + 1;
+
+        GaussianBlur(im_cam, im_cam_l, Size(ksize, ksize), sigma, sigma);
+        im_cam_h = im_cam - im_cam_l;
+        im_fusion = im_cam_h + im_therm_border;
+    } else {
+        im_fusion = im_therm_border;
+    }
 
     Mat im_fusion_color;
     applyColorMap(im_fusion, im_fusion_color, g_image.color_tab);
