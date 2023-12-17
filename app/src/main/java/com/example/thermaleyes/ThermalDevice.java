@@ -13,6 +13,7 @@ import com.felhr.usbserial.UsbSerialInterface;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashMap;
 
 @RequiresApi(api = Build.VERSION_CODES.O)
@@ -31,15 +32,18 @@ public abstract class ThermalDevice {
 
     private final UsbSerialInterface.UsbReadCallback mCallback =
             arg0 -> {
-                Log.i(TAG, "Get data from device");
+                Log.i(TAG, "Get data from device, len: " + arg0.length);
 
-                if (arg0.length != DATA_LEN ||
-                        arg0[arg0.length - 2] != -128 || arg0[arg0.length - 1] != 0) {
-                    Log.e(TAG, "Receive invalid data, len: " + arg0.length);
+                ThermalDataPacket packet = new ThermalDataPacket(arg0);
+                if (packet.isInvalid() || packet.getType() != ThermalDataPacket.TYPE_DATA) {
+                    Log.e(TAG, "Receive invalid data, Header: " + packet.getHeader() +
+                            ", Type: " + packet.getType() + ", len: " + packet.getLength());
                     return;
                 }
 
-                float[] tempData = getTemperatureData(arg0);
+                Log.i(TAG, "Receive invalid data, Header: " + packet.getHeader() +
+                        ", Type: " + packet.getType() + ", len: " + packet.getLength());
+                float[] tempData = getTemperatureData(packet.getData());
 
                 float maxTemp = tempData[0];
                 float minTemp = tempData[0];
@@ -129,9 +133,10 @@ public abstract class ThermalDevice {
     private float[] getTemperatureData(byte[] thermalData) {
         float[] tempData = new float[IMAGE_PIXEL];
 
+        Log.i(TAG, "data length: " + thermalData.length);
         for (int i = 0; i < tempData.length; i++) {
-            int highByte = Byte.toUnsignedInt(thermalData[2 * i]);
-            int lowByte = Byte.toUnsignedInt(thermalData[2 * i + 1]);
+            int lowByte = Byte.toUnsignedInt(thermalData[2 * i]);
+            int highByte = Byte.toUnsignedInt(thermalData[2 * i + 1]);
 
             tempData[i] = ((short)(highByte << 8 | lowByte)) / 100.0f;
         }
@@ -151,5 +156,36 @@ public abstract class ThermalDevice {
 
         buffer.position(0);
         return buffer;
+    }
+
+    private class ThermalDataPacket {
+        public static final int TYPE_CMD_FPS = 0;
+        public static final int TYPE_DATA = 1;
+
+        private byte[] mData;
+
+        ThermalDataPacket(byte[] data) {
+            mData = data;
+        }
+
+        public boolean isInvalid() {
+            return getHeader() != 0x8000 || getLength() <= 6 || (getLength() + 6 != mData.length);
+        }
+
+        public int getHeader() {
+            return Byte.toUnsignedInt(mData[0]) | Byte.toUnsignedInt(mData[1]) << 8;
+        }
+
+        public int getType() {
+            return Byte.toUnsignedInt(mData[2]) | Byte.toUnsignedInt(mData[3]) << 8;
+        }
+
+        public int getLength() {
+            return Byte.toUnsignedInt(mData[4]) | Byte.toUnsignedInt(mData[5]) << 8;
+        }
+
+        public byte[] getData() {
+            return Arrays.copyOfRange(mData, 6, 6 + getLength());
+        }
     }
 }
