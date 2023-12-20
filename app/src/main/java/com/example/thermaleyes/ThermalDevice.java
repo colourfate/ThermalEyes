@@ -12,7 +12,9 @@ import com.felhr.usbserial.UsbSerialDevice;
 import com.felhr.usbserial.UsbSerialInterface;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 
@@ -20,6 +22,8 @@ import java.util.HashMap;
 public abstract class ThermalDevice {
     public final static int IMAGE_WIDTH = 32;
     public final static int IMAGE_HEIGHT = 24;
+    public final static int FPS_16 = 16;
+    public final static int FPS_8 = 8;
 
     private final static String TAG = ThermalDevice.class.getSimpleName();
     private final static int VENDOR_ID = 1155;
@@ -29,15 +33,25 @@ public abstract class ThermalDevice {
 
     private final static float MAX_RANGE = 20.0f;
     private UsbManager myUsbManager;
+    private UsbSerialDevice mSerial;
 
     private final UsbSerialInterface.UsbReadCallback mCallback =
             arg0 -> {
                 Log.i(TAG, "Get data from device, len: " + arg0.length);
 
                 ThermalDataPacket packet = new ThermalDataPacket(arg0);
-                if (packet.isInvalid() || packet.getType() != ThermalDataPacket.TYPE_DATA) {
+                if (packet.isInvalid()) {
                     Log.e(TAG, "Receive invalid data, Header: " + packet.getHeader() +
                             ", Type: " + packet.getType() + ", len: " + packet.getLength());
+                    return;
+                }
+
+                if (packet.getType() == ThermalDataPacket.TYPE_LOG) {
+                    Log.i("ThermalBridge", new String(packet.getData(), StandardCharsets.UTF_8));
+                    return;
+                }
+
+                if (packet.getType() != ThermalDataPacket.TYPE_DATA) {
                     return;
                 }
 
@@ -82,16 +96,34 @@ public abstract class ThermalDevice {
             throw new IOException("Connect device failed");
         }
 
-        UsbSerialDevice serial = UsbSerialDevice.createUsbSerialDevice(device, deviceConnection);
-        if (serial == null) {
+        mSerial = UsbSerialDevice.createUsbSerialDevice(device, deviceConnection);
+        if (mSerial == null) {
             Log.e(TAG, "createUsbSerialDevice failed");
             throw new IOException("Not support terminal");
         }
 
         Log.i(TAG, "Create CDC devices success");
         // No physical serial port, no need to set parameters
-        serial.open();
-        serial.read(mCallback);
+        mSerial.open();
+        mSerial.read(mCallback);
+    }
+
+    public void setFPS(int fps) {
+        if (fps != FPS_8 && fps != FPS_16) {
+            return;
+        }
+
+        ThermalDataPacket packet = ThermalDataPacket.allocate(7);
+        if (packet == null) {
+            return;
+        }
+
+        // { 0, 0x80, 0, 0, 0x1, 0, fps }
+        packet.setHeader();
+        packet.setType(ThermalDataPacket.TYPE_CMD_FPS);
+        packet.setLength();
+        packet.setData(new byte[]{ (byte) fps });
+        mSerial.write(packet.array());
     }
 
     private UsbDevice enumerateDevice(int vendorId, int productId) {
@@ -158,34 +190,70 @@ public abstract class ThermalDevice {
         return buffer;
     }
 
-    private class ThermalDataPacket {
+    private static class ThermalDataPacket {
         public static final int TYPE_CMD_FPS = 0;
         public static final int TYPE_DATA = 1;
-
-        private byte[] mData;
+        public static final int TYPE_LOG = 2;
+        private static final int MAX_SIZE = 2048;
+        private final byte[] mData;
 
         ThermalDataPacket(byte[] data) {
             mData = data;
         }
 
+        public static ThermalDataPacket allocate(int length) {
+            if (length > MAX_SIZE) {
+                return null;
+            }
+            return new ThermalDataPacket(new byte[length]);
+        }
+
         public boolean isInvalid() {
-            return getHeader() != 0x8000 || getLength() <= 6 || (getLength() + 6 != mData.length);
+            return getHeader() != 0x8000 || getLength() == 0 || (getLength() + 6 != mData.length);
+        }
+
+        public void setHeader() {
+            mData[0] = 0;
+            mData[1] = (byte) 0x80;
         }
 
         public int getHeader() {
             return Byte.toUnsignedInt(mData[0]) | Byte.toUnsignedInt(mData[1]) << 8;
         }
 
+        public void setType(int type) {
+            mData[2] = (byte) type;
+            mData[3] = (byte) (type >> 8);
+        }
+
         public int getType() {
             return Byte.toUnsignedInt(mData[2]) | Byte.toUnsignedInt(mData[3]) << 8;
+        }
+
+        public void setLength() {
+            int len = mData.length - 6;
+
+            if (len < 0) {
+                len = 0;
+            }
+            mData[4] = (byte) len;
+            mData[5] = (byte) (len >> 8);
         }
 
         public int getLength() {
             return Byte.toUnsignedInt(mData[4]) | Byte.toUnsignedInt(mData[5]) << 8;
         }
 
+        public void setData(byte[] data) {
+            System.arraycopy(data, 0, mData, 6, data.length);
+        }
+
         public byte[] getData() {
             return Arrays.copyOfRange(mData, 6, 6 + getLength());
+        }
+
+        public byte[] array() {
+            return mData;
         }
     }
 }

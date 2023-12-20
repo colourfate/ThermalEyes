@@ -302,7 +302,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 mThermalDevice.connect();
             } catch (IOException e) {
                 Log.e(TAG, "Usb connect failed");
+                return;
             }
+            mThermalDevice.setFPS(ThermalDevice.FPS_16);
         } else if (v.getId() == R.id.btnCloseCamera) {
             // close camera
             if (mCameraHelper != null) {
