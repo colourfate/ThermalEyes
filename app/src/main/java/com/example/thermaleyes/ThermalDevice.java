@@ -12,18 +12,16 @@ import com.felhr.usbserial.UsbSerialDevice;
 import com.felhr.usbserial.UsbSerialInterface;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 
-@RequiresApi(api = Build.VERSION_CODES.O)
 public abstract class ThermalDevice {
     public final static int IMAGE_WIDTH = 32;
     public final static int IMAGE_HEIGHT = 24;
-    public final static int FPS_16 = 16;
     public final static int FPS_8 = 8;
+    public final static int FPS_4 = 4;
 
     private final static String TAG = ThermalDevice.class.getSimpleName();
     private final static int VENDOR_ID = 1155;
@@ -34,7 +32,9 @@ public abstract class ThermalDevice {
     private final static float MAX_RANGE = 20.0f;
     private UsbManager myUsbManager;
     private UsbSerialDevice mSerial;
+    private int mFPS = FPS_8;
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     private final UsbSerialInterface.UsbReadCallback mCallback =
             arg0 -> {
                 Log.i(TAG, "Get data from device, len: " + arg0.length);
@@ -55,8 +55,6 @@ public abstract class ThermalDevice {
                     return;
                 }
 
-                Log.i(TAG, "Receive invalid data, Header: " + packet.getHeader() +
-                        ", Type: " + packet.getType() + ", len: " + packet.getLength());
                 float[] tempData = getTemperatureData(packet.getData());
 
                 float maxTemp = tempData[0];
@@ -85,6 +83,7 @@ public abstract class ThermalDevice {
         myUsbManager = usbManager;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     public void connect() throws IOException {
         UsbDevice device = enumerateDevice(VENDOR_ID, PRODUCT_ID);
         if (device == null) {
@@ -109,7 +108,7 @@ public abstract class ThermalDevice {
     }
 
     public void setFPS(int fps) {
-        if (fps != FPS_8 && fps != FPS_16) {
+        if (fps != FPS_4 && fps != FPS_8) {
             return;
         }
 
@@ -124,6 +123,11 @@ public abstract class ThermalDevice {
         packet.setLength();
         packet.setData(new byte[]{ (byte) fps });
         mSerial.write(packet.array());
+        mFPS = fps;
+    }
+
+    public int getFPS() {
+        return mFPS;
     }
 
     private UsbDevice enumerateDevice(int vendorId, int productId) {

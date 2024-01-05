@@ -1,17 +1,19 @@
 package com.example.thermaleyes;
 
 import android.app.Dialog;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.CheckBox;
+import android.widget.RadioButton;
 import android.widget.RadioGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.fragment.app.DialogFragment;
 
 import com.example.thermaleyes.databinding.FragmentCameraControlsBinding;
@@ -20,12 +22,15 @@ import com.warkiz.widget.OnSeekChangeListener;
 
 public class CameraControlsDialogFragment extends DialogFragment {
 
-    private ImageFusion mImageFusion;
+    private final ImageFusion mImageFusion;
+    private final ThermalDevice mThermalDevice;
 
     private FragmentCameraControlsBinding mBinding;
+    private static final String TAG = CameraControlsDialogFragment.class.getSimpleName();
 
-    public CameraControlsDialogFragment(ImageFusion imageFusion) {
+    public CameraControlsDialogFragment(ImageFusion imageFusion, ThermalDevice thermalDevice) {
         mImageFusion = imageFusion;
+        mThermalDevice = thermalDevice;
     }
 
     @Override
@@ -96,17 +101,22 @@ public class CameraControlsDialogFragment extends DialogFragment {
                 new int[]{0, 30},
                 imageFusion.getParallaxOffset());
 
-        setColorTabRadioGroup(
-                mBinding.rgColorTab,
+        setRadioGroup(mBinding.rgColorTab,
                 true,
-                new int[]{ImageFusion.PSEUDO_COLOR_TAB_PLASMA, ImageFusion.PSEUDO_COLOR_TAB_JET},
+                new int[]{ ImageFusion.PSEUDO_COLOR_TAB_PLASMA, ImageFusion.PSEUDO_COLOR_TAB_JET },
                 imageFusion.getColorTab());
 
-        setFusionModeRadioGroup(
+        setRadioGroup(
                 mBinding.rgFusionMode,
                 true,
-                new int[]{ImageFusion.FUSION_MODE_COLOR_MAP, ImageFusion.FUSION_MODE_HIGH_FREQ_EXTRACT},
+                new int[]{ ImageFusion.FUSION_MODE_COLOR_MAP, ImageFusion.FUSION_MODE_HIGH_FREQ_EXTRACT },
                 imageFusion.getMode());
+
+        setRadioGroup(
+                mBinding.rgThermalFPS,
+                true,
+                new int[]{ ThermalDevice.FPS_4, ThermalDevice.FPS_8},
+                mThermalDevice.getFPS());
     }
 
     private void setAllControlChangeListener() {
@@ -135,6 +145,16 @@ public class CameraControlsDialogFragment extends DialogFragment {
                 fusionMode = ImageFusion.FUSION_MODE_HIGH_FREQ_EXTRACT;
             }
             mImageFusion.setMode(fusionMode);
+        });
+
+        mBinding.rgThermalFPS.setOnCheckedChangeListener((group, checkedId) -> {
+            int fps;
+            if (checkedId == R.id.rb8Hz) {
+                fps = ThermalDevice.FPS_4;
+            } else {
+                fps = ThermalDevice.FPS_8;
+            }
+            mThermalDevice.setFPS(fps);
         });
     }
 
@@ -175,6 +195,18 @@ public class CameraControlsDialogFragment extends DialogFragment {
                 case ImageFusion.FUSION_MODE_HIGH_FREQ_EXTRACT:
                     radioGroup.check(R.id.rbPseudoColor);
                     break;
+            }
+        }
+    }
+
+    private void setRadioGroup(RadioGroup radioGroup, boolean isEnable, int[] limit, int value) {
+        radioGroup.setEnabled(isEnable);
+        if (isEnable) {
+            for (int i = 0; i < limit.length; i++) {
+                if (limit[i] == value) {
+                    RadioButton rb = (RadioButton)radioGroup.getChildAt(i);
+                    rb.setChecked(true);
+                }
             }
         }
     }

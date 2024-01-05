@@ -304,7 +304,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Log.e(TAG, "Usb connect failed");
                 return;
             }
-            mThermalDevice.setFPS(ThermalDevice.FPS_16);
+            mThermalDevice.setFPS(ThermalDevice.FPS_8);
         } else if (v.getId() == R.id.btnCloseCamera) {
             // close camera
             if (mCameraHelper != null) {
@@ -347,7 +347,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void showCameraControlsDialog() {
         if (mControlsDialog == null) {
-            mControlsDialog = new CameraControlsDialogFragment(mImageFusion);
+            mControlsDialog = new CameraControlsDialogFragment(mImageFusion, mThermalDevice);
         }
         // When DialogFragment is not showing
         if (!mControlsDialog.isAdded()) {

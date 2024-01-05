@@ -88,6 +88,24 @@
                     style="@style/FragmentCameraControlsRadioButton"
                     android:text="Jet" />
             </RadioGroup>
+
+            <RadioGroup
+                android:id="@+id/rgThermalFPS"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:orientation="horizontal">
+
+                <RadioButton
+                    android:id="@+id/rb8Hz"
+                    style="@style/FragmentCameraControlsRadioButton"
+                    android:text="4Hz" />
+
+                <RadioButton
+                    android:id="@+id/rb16Hz"
+                    style="@style/FragmentCameraControlsRadioButton"
+                    android:text="8Hz" />
+            </RadioGroup>
         </LinearLayout>
     </ScrollView>
 
