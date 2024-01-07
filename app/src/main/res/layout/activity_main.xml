@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/GRAY">
+    android:background="@color/BLACK">
 
     <FrameLayout
         android:id="@+id/flFusionImageView"
@@ -57,18 +57,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="MAX"
-        android:textColor="@color/CRIMSON"
-        tools:layout_absoluteX="16dp"
-        tools:layout_absoluteY="15dp" />
+        android:textColor="@color/CRIMSON" />
 
     <TextView
         android:id="@+id/tvMinTemperature"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="MIN"
-        android:textColor="@color/ROYALBLUE"
-        tools:layout_absoluteX="16dp"
-        tools:layout_absoluteY="53dp" />
+        android:textColor="@color/ROYALBLUE" />
 </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

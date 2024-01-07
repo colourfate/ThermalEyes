@@ -39,7 +39,11 @@ public abstract class ThermalDevice {
             arg0 -> {
                 Log.i(TAG, "Get data from device, len: " + arg0.length);
 
-                ThermalDataPacket packet = new ThermalDataPacket(arg0);
+                ThermalDataPacket packet = ThermalDataPacket.create(arg0);
+                if (packet == null) {
+                    Log.e(TAG, "Create packet failed");
+                    return;
+                }
                 if (packet.isInvalid()) {
                     Log.e(TAG, "Receive invalid data, Header: " + packet.getHeader() +
                             ", Type: " + packet.getType() + ", len: " + packet.getLength());
@@ -203,6 +207,14 @@ public abstract class ThermalDevice {
 
         ThermalDataPacket(byte[] data) {
             mData = data;
+        }
+
+        public static ThermalDataPacket create(byte[] data) {
+            if (data.length <= 6) {
+                return null;
+            }
+
+            return new ThermalDataPacket(data);
         }
 
         public static ThermalDataPacket allocate(int length) {

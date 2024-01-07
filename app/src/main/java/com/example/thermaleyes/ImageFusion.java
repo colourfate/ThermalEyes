@@ -196,8 +196,10 @@ public abstract class ImageFusion extends Thread {
             fusionFrame.minVal = thermalFrame.minVal;
             float xScale = (float)cameraFrame.width / thermalFrame.width;
             float yScale = (float)cameraFrame.height / thermalFrame.height;
-            fusionFrame.maxLoc = new Point((int)(thermalFrame.maxLoc.x * xScale), (int)(thermalFrame.maxLoc.y * yScale) - 15);
-            fusionFrame.minLoc = new Point((int)(thermalFrame.minLoc.x * xScale), (int)(thermalFrame.minLoc.y * yScale) - 15);
+            fusionFrame.maxLoc = new Point((int)(thermalFrame.maxLoc.x * xScale),
+                    (int)(thermalFrame.maxLoc.y * yScale) - mAlgoConfig.parallaxOffset);
+            fusionFrame.minLoc = new Point((int)(thermalFrame.minLoc.x * xScale),
+                    (int)(thermalFrame.minLoc.y * yScale) - mAlgoConfig.parallaxOffset);
 
             getFusionImage(fusionFrame.data, cameraFrame.data, thermalFrame.data,
                     mCamWidth, mCamHeight, mThermWidth, mThermHeight);

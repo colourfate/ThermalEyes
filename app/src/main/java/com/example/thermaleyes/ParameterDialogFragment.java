@@ -1,7 +1,6 @@
 package com.example.thermaleyes;
 
 import android.app.Dialog;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,22 +12,21 @@ import android.widget.RadioGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.fragment.app.DialogFragment;
 
-import com.example.thermaleyes.databinding.FragmentCameraControlsBinding;
+import com.example.thermaleyes.databinding.FragmentParamterBinding;
 import com.warkiz.widget.IndicatorSeekBar;
 import com.warkiz.widget.OnSeekChangeListener;
 
-public class CameraControlsDialogFragment extends DialogFragment {
+public class ParameterDialogFragment extends DialogFragment {
 
     private final ImageFusion mImageFusion;
     private final ThermalDevice mThermalDevice;
 
-    private FragmentCameraControlsBinding mBinding;
-    private static final String TAG = CameraControlsDialogFragment.class.getSimpleName();
+    private FragmentParamterBinding mBinding;
+    private static final String TAG = ParameterDialogFragment.class.getSimpleName();
 
-    public CameraControlsDialogFragment(ImageFusion imageFusion, ThermalDevice thermalDevice) {
+    public ParameterDialogFragment(ImageFusion imageFusion, ThermalDevice thermalDevice) {
         mImageFusion = imageFusion;
         mThermalDevice = thermalDevice;
     }
@@ -50,7 +48,7 @@ public class CameraControlsDialogFragment extends DialogFragment {
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        mBinding = FragmentCameraControlsBinding.inflate(getLayoutInflater(), container, false);
+        mBinding = FragmentParamterBinding.inflate(getLayoutInflater(), container, false);
         setButtonListeners();
         return mBinding.getRoot();
     }
@@ -67,8 +65,8 @@ public class CameraControlsDialogFragment extends DialogFragment {
             dismiss();
         });
         mBinding.btnCameraControlsReset.setOnClickListener(v -> {
-            resetAllControlParams(mImageFusion);
-            setAllControlParams(mImageFusion);
+            resetAllControlParams();
+            setAllControlParams();
         });
     }
 
@@ -84,33 +82,33 @@ public class CameraControlsDialogFragment extends DialogFragment {
     }
 
     private void showCameraControls() {
-        setAllControlParams(mImageFusion);
+        setAllControlParams();
         setAllControlChangeListener();
     }
 
-    private void setAllControlParams(ImageFusion imageFusion) {
+    private void setAllControlParams() {
         setSeekBarParams(
                 mBinding.isbHighFreq,
                 true,
                 new int[]{0, 3},
-                imageFusion.getHighFreqRatio());
+                mImageFusion.getHighFreqRatio());
 
         setSeekBarParams(
                 mBinding.isbParallaxOffset,
                 true,
                 new int[]{0, 30},
-                imageFusion.getParallaxOffset());
+                mImageFusion.getParallaxOffset());
 
         setRadioGroup(mBinding.rgColorTab,
                 true,
                 new int[]{ ImageFusion.PSEUDO_COLOR_TAB_PLASMA, ImageFusion.PSEUDO_COLOR_TAB_JET },
-                imageFusion.getColorTab());
+                mImageFusion.getColorTab());
 
         setRadioGroup(
                 mBinding.rgFusionMode,
                 true,
                 new int[]{ ImageFusion.FUSION_MODE_COLOR_MAP, ImageFusion.FUSION_MODE_HIGH_FREQ_EXTRACT },
-                imageFusion.getMode());
+                mImageFusion.getMode());
 
         setRadioGroup(
                 mBinding.rgThermalFPS,
@@ -158,8 +156,8 @@ public class CameraControlsDialogFragment extends DialogFragment {
         });
     }
 
-    private void resetAllControlParams(ImageFusion imageFusion) {
-        imageFusion.resetConfig();
+    private void resetAllControlParams() {
+
     }
 
     private void setSeekBarParams(IndicatorSeekBar seekBar, boolean isEnable, int[] limit, int value) {
@@ -168,34 +166,6 @@ public class CameraControlsDialogFragment extends DialogFragment {
             seekBar.setMax(limit[1]);
             seekBar.setMin(limit[0]);
             seekBar.setProgress(value);
-        }
-    }
-
-    private void setColorTabRadioGroup(RadioGroup radioGroup, boolean isEnable, int[] limit, int value) {
-        radioGroup.setEnabled(isEnable);
-        if (isEnable) {
-            switch (value) {
-                case ImageFusion.PSEUDO_COLOR_TAB_PLASMA:
-                    radioGroup.check(R.id.rbPLASMA);
-                    break;
-                case ImageFusion.PSEUDO_COLOR_TAB_JET:
-                    radioGroup.check(R.id.rbJet);
-                    break;
-            }
-        }
-    }
-
-    private void setFusionModeRadioGroup(RadioGroup radioGroup, boolean isEnable, int[] limit, int value) {
-        radioGroup.setEnabled(isEnable);
-        if (isEnable) {
-            switch (value) {
-                case ImageFusion.FUSION_MODE_COLOR_MAP:
-                    radioGroup.check(R.id.rbColorMap);
-                    break;
-                case ImageFusion.FUSION_MODE_HIGH_FREQ_EXTRACT:
-                    radioGroup.check(R.id.rbPseudoColor);
-                    break;
-            }
         }
     }
 

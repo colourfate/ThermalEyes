@@ -49,8 +49,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private TextView mMaxTempTestView, mMinTempTestView;
 
     private NV21ToBitmap mNv21ToBitmap;
-    private CameraControlsDialogFragment mControlsDialog;
-    private boolean mIsCameraConnected = true;
+    private ParameterDialogFragment mControlsDialog;
+    private boolean mIsCameraConnected = false;
     private final ImageFusion mImageFusion = new ImageFusion(DEFAULT_WIDTH, DEFAULT_HEIGHT,
             ThermalDevice.IMAGE_WIDTH, ThermalDevice.IMAGE_HEIGHT) {
 
@@ -72,7 +72,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             mIsCameraConnected = true;
 
             runOnUiThread(() -> {
+                if (mFusionImagePreview.getVisibility() != View.VISIBLE) {
+                    mFusionImagePreview.setVisibility(View.VISIBLE);
+                }
                 mFusionImagePreview.setImageBitmap(scaleBm);
+                invalidateOptionsMenu();
             });
         }
     };
@@ -204,16 +208,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         public void onAttach(UsbDevice device) {
             if (device.getVendorId() != CAMERA_VIP) {
-                Log.i(TAG, "Not support device: " + device.getVendorId());
+                Log.i(TAG, "onAttach: Not support device: " + device.getVendorId());
+                return;
             }
+
             if (CAM_DISPLAY) Log.v(TAG, "onAttach:");
             selectDevice(device);
+
+            try {
+                mThermalDevice.connect();
+            } catch (IOException e) {
+                Log.e(TAG, "Usb connect failed");
+                return;
+            }
+            mThermalDevice.setFPS(ThermalDevice.FPS_8);
         }
 
         @Override
         public void onDeviceOpen(UsbDevice device, boolean isFirstOpen) {
             if (device.getVendorId() != CAMERA_VIP) {
-                Log.i(TAG, "Not support device: " + device.getVendorId());
+                Log.i(TAG, "onDeviceOpen: Not support device: " + device.getVendorId());
                 return;
             }
             if (CAM_DISPLAY) Log.v(TAG, "onDeviceOpen:");
@@ -223,7 +237,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         public void onCameraOpen(UsbDevice device) {
             if (device.getVendorId() != CAMERA_VIP) {
-                Log.i(TAG, "Not support device: " + device.getVendorId());
+                Log.i(TAG, "onCameraOpen: Not support device: " + device.getVendorId());
                 return;
             }
 
@@ -252,7 +266,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         public void onCameraClose(UsbDevice device) {
             if (device.getVendorId() != CAMERA_VIP) {
-                Log.i(TAG, "Not support device: " + device.getVendorId());
+                Log.i(TAG, "onCameraClose: Not support device: " + device.getVendorId());
                 return;
             }
             if (CAM_DISPLAY) Log.v(TAG, "onCameraClose:");
@@ -261,7 +275,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         public void onDeviceClose(UsbDevice device) {
             if (device.getVendorId() != CAMERA_VIP) {
-                Log.i(TAG, "Not support device: " + device.getVendorId());
+                Log.i(TAG, "onDevicesClose: Not support device: " + device.getVendorId());
                 return;
             }
             if (CAM_DISPLAY) Log.v(TAG, "onDeviceClose:");
@@ -270,16 +284,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         public void onDetach(UsbDevice device) {
             if (device.getVendorId() != CAMERA_VIP) {
-                Log.i(TAG, "Not support device: " + device.getVendorId());
+                Log.i(TAG, "onDetach: Not support device: " + device.getVendorId());
                 return;
             }
             if (CAM_DISPLAY) Log.v(TAG, "onDetach:");
+            mFusionImagePreview.setVisibility(View.GONE);
         }
 
         @Override
         public void onCancel(UsbDevice device) {
             if (device.getVendorId() != CAMERA_VIP) {
-                Log.i(TAG, "Not support device: " + device.getVendorId());
+                Log.i(TAG, "onCancel: Not support device: " + device.getVendorId());
                 return;
             }
             if (CAM_DISPLAY) Log.v(TAG, "onCancel:");
@@ -298,13 +313,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
             }
 
-            try {
-                mThermalDevice.connect();
-            } catch (IOException e) {
-                Log.e(TAG, "Usb connect failed");
-                return;
+            if (!mIsCameraConnected) {
+                try {
+                    mThermalDevice.connect();
+                } catch (IOException e) {
+                    Log.e(TAG, "Usb connect failed");
+                    return;
+                }
+                mThermalDevice.setFPS(ThermalDevice.FPS_8);
             }
-            mThermalDevice.setFPS(ThermalDevice.FPS_8);
         } else if (v.getId() == R.id.btnCloseCamera) {
             // close camera
             if (mCameraHelper != null) {
@@ -347,7 +364,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void showCameraControlsDialog() {
         if (mControlsDialog == null) {
-            mControlsDialog = new CameraControlsDialogFragment(mImageFusion, mThermalDevice);
+            mControlsDialog = new ParameterDialogFragment(mImageFusion, mThermalDevice);
         }
         // When DialogFragment is not showing
         if (!mControlsDialog.isAdded()) {
