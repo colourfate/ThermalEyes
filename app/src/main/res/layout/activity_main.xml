@@ -21,6 +21,15 @@
             android:id="@+id/ivFusionImagePreview"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
+        <TextView
+            android:id="@+id/tvConnectHip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Connect Device"
+            android:gravity="center"
+            android:layout_gravity="center"
+            android:textSize="20sp"
+            android:textColor="@color/WHITE" />
     </FrameLayout>
 
     <RelativeLayout
@@ -56,14 +65,18 @@
         android:id="@+id/tvMaxTemperature"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="MAX"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="5dp"
+        android:textSize="16sp"
         android:textColor="@color/CRIMSON" />
 
     <TextView
         android:id="@+id/tvMinTemperature"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="MIN"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="5dp"
+        android:textSize="16sp"
         android:textColor="@color/ROYALBLUE" />
 </LinearLayout>
 

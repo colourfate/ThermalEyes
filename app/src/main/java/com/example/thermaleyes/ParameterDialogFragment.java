@@ -22,6 +22,7 @@ public class ParameterDialogFragment extends DialogFragment {
 
     private final ImageFusion mImageFusion;
     private final ThermalDevice mThermalDevice;
+    private final ControlParam mDefaultParam = new ControlParam();
 
     private FragmentParamterBinding mBinding;
     private static final String TAG = ParameterDialogFragment.class.getSimpleName();
@@ -29,6 +30,12 @@ public class ParameterDialogFragment extends DialogFragment {
     public ParameterDialogFragment(ImageFusion imageFusion, ThermalDevice thermalDevice) {
         mImageFusion = imageFusion;
         mThermalDevice = thermalDevice;
+
+        mDefaultParam.highFreq = mImageFusion.getHighFreqRatio();
+        mDefaultParam.colorTab = mImageFusion.getColorTab();
+        mDefaultParam.parallaxOffset = mImageFusion.getParallaxOffset();
+        mDefaultParam.fusionMode = mImageFusion.getMode();
+        mDefaultParam.thermalFPS = mThermalDevice.getFPS();
     }
 
     @Override
@@ -65,8 +72,8 @@ public class ParameterDialogFragment extends DialogFragment {
             dismiss();
         });
         mBinding.btnCameraControlsReset.setOnClickListener(v -> {
-            resetAllControlParams();
-            setAllControlParams();
+            resetAllControlParams(mDefaultParam);
+            setAllControlParams(mDefaultParam);
         });
     }
 
@@ -82,39 +89,46 @@ public class ParameterDialogFragment extends DialogFragment {
     }
 
     private void showCameraControls() {
-        setAllControlParams();
+        ControlParam currentParam = new ControlParam();
+        currentParam.highFreq = mImageFusion.getHighFreqRatio();
+        currentParam.colorTab = mImageFusion.getColorTab();
+        currentParam.parallaxOffset = mImageFusion.getParallaxOffset();
+        currentParam.fusionMode = mImageFusion.getMode();
+        currentParam.thermalFPS = mThermalDevice.getFPS();
+
+        setAllControlParams(currentParam);
         setAllControlChangeListener();
     }
 
-    private void setAllControlParams() {
+    private void setAllControlParams(ControlParam defaultParam) {
         setSeekBarParams(
                 mBinding.isbHighFreq,
                 true,
                 new int[]{0, 3},
-                mImageFusion.getHighFreqRatio());
+                defaultParam.highFreq);
 
         setSeekBarParams(
                 mBinding.isbParallaxOffset,
                 true,
                 new int[]{0, 30},
-                mImageFusion.getParallaxOffset());
+                defaultParam.parallaxOffset);
 
         setRadioGroup(mBinding.rgColorTab,
                 true,
                 new int[]{ ImageFusion.PSEUDO_COLOR_TAB_PLASMA, ImageFusion.PSEUDO_COLOR_TAB_JET },
-                mImageFusion.getColorTab());
+                defaultParam.colorTab);
 
         setRadioGroup(
                 mBinding.rgFusionMode,
                 true,
                 new int[]{ ImageFusion.FUSION_MODE_COLOR_MAP, ImageFusion.FUSION_MODE_HIGH_FREQ_EXTRACT },
-                mImageFusion.getMode());
+                defaultParam.fusionMode);
 
         setRadioGroup(
                 mBinding.rgThermalFPS,
                 true,
                 new int[]{ ThermalDevice.FPS_4, ThermalDevice.FPS_8},
-                mThermalDevice.getFPS());
+                defaultParam.thermalFPS);
     }
 
     private void setAllControlChangeListener() {
@@ -156,8 +170,12 @@ public class ParameterDialogFragment extends DialogFragment {
         });
     }
 
-    private void resetAllControlParams() {
-
+    private void resetAllControlParams(ControlParam defaultParam) {
+        mImageFusion.setHighFreqRatio(defaultParam.highFreq);
+        mImageFusion.setParallaxOffset(defaultParam.parallaxOffset);
+        mImageFusion.setColorTab(defaultParam.colorTab);
+        mImageFusion.setMode(defaultParam.fusionMode);
+        mThermalDevice.setFPS(defaultParam.thermalFPS);
     }
 
     private void setSeekBarParams(IndicatorSeekBar seekBar, boolean isEnable, int[] limit, int value) {
@@ -191,5 +209,13 @@ public class ParameterDialogFragment extends DialogFragment {
         default void onStopTrackingTouch(IndicatorSeekBar seekBar) {
 
         }
+    }
+
+    private class ControlParam {
+        int highFreq;
+        int parallaxOffset;
+        int colorTab;
+        int fusionMode;
+        int thermalFPS;
     }
 }

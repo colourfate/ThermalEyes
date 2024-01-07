@@ -46,7 +46,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private ICameraHelper mCameraHelper;
     private ImageView mFusionImagePreview;
-    private TextView mMaxTempTestView, mMinTempTestView;
+    private TextView mMaxTempTestView, mMinTempTestView, mConnectTextView;
 
     private NV21ToBitmap mNv21ToBitmap;
     private ParameterDialogFragment mControlsDialog;
@@ -72,9 +72,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             mIsCameraConnected = true;
 
             runOnUiThread(() -> {
-                if (mFusionImagePreview.getVisibility() != View.VISIBLE) {
-                    mFusionImagePreview.setVisibility(View.VISIBLE);
-                }
                 mFusionImagePreview.setImageBitmap(scaleBm);
                 invalidateOptionsMenu();
             });
@@ -143,8 +140,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         for (int i = 0; i < tempCoordinate.length; i++) {
             int x = (int)(tempCoordinate[i].x * xScale);
             int y = (int)(tempCoordinate[i].y * yScale);
-            Rect rect = new Rect(x, y, x + bitmap.getWidth() / ThermalDevice.IMAGE_WIDTH,
-                    y + bitmap.getHeight() / ThermalDevice.IMAGE_HEIGHT);
+            int unit = bitmap.getWidth() / ThermalDevice.IMAGE_WIDTH;
+            Rect rect = new Rect(x - unit / 2, y - unit / 2, x + unit / 2,
+                    y + unit / 2);
 
             if (i == 0) {
                 paint.setColor(Color.RED);
@@ -159,6 +157,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mFusionImagePreview = findViewById(R.id.ivFusionImagePreview);
         mMaxTempTestView = findViewById(R.id.tvMaxTemperature);
         mMinTempTestView = findViewById(R.id.tvMinTemperature);
+        mConnectTextView = findViewById(R.id.tvConnectHip);
 
         Button btnOpenCamera = findViewById(R.id.btnOpenCamera);
         btnOpenCamera.setOnClickListener(this);
@@ -214,6 +213,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             if (CAM_DISPLAY) Log.v(TAG, "onAttach:");
             selectDevice(device);
+            mFusionImagePreview.setVisibility(View.VISIBLE);
+            mConnectTextView.setVisibility(View.GONE);
+            mMaxTempTestView.setVisibility(View.VISIBLE);
+            mMinTempTestView.setVisibility(View.VISIBLE);
 
             try {
                 mThermalDevice.connect();
@@ -289,6 +292,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
             if (CAM_DISPLAY) Log.v(TAG, "onDetach:");
             mFusionImagePreview.setVisibility(View.GONE);
+            mConnectTextView.setVisibility(View.VISIBLE);
+            mMaxTempTestView.setVisibility(View.GONE);
+            mMinTempTestView.setVisibility(View.GONE);
         }
 
         @Override
