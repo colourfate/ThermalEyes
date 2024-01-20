@@ -54,30 +54,31 @@
             android:text="@string/btn_close_camera" />
     </RelativeLayout>
 
-<LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:gravity="bottom"
-    android:orientation="vertical"
-    app:layout_constraintTop_toTopOf="parent">
-
-    <TextView
-        android:id="@+id/tvMaxTemperature"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="5dp"
-        android:textSize="16sp"
-        android:textColor="@color/CRIMSON" />
+        android:gravity="bottom"
+        android:orientation="vertical"
+        android:layout_marginBottom="20dp"
+        app:layout_constraintBottom_toTopOf="@+id/flFusionImageView">
 
-    <TextView
-        android:id="@+id/tvMinTemperature"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="5dp"
-        android:textSize="16sp"
-        android:textColor="@color/ROYALBLUE" />
-</LinearLayout>
+        <TextView
+            android:id="@+id/tvMaxTemperature"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="5dp"
+            android:textColor="@color/CRIMSON"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/tvMinTemperature"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="5dp"
+            android:textColor="@color/ROYALBLUE"
+            android:textSize="16sp" />
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -98,8 +98,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             if (TEMP_DISPLAY) {
                 runOnUiThread(() -> {
-                    mMaxTempTestView.setText(String.format("max: %.2f", maxTemp));
-                    mMinTempTestView.setText(String.format("min: %.2f", minTemp));
+                    mMaxTempTestView.setText(String.format("Max: %.2f", maxTemp));
+                    mMinTempTestView.setText(String.format("Min: %.2f", minTemp));
                 });
             }
         }
