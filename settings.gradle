@@ -16,7 +16,6 @@ dependencyResolutionManagement {
 }
 rootProject.name = "ThermalEyes"
 include ':app'
-include ':app2'
 
 include ':java'
 include ':opencv'
