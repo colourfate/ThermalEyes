@@ -136,9 +136,9 @@ void fusion_get_image(uint32_t *fusion_data, const uint32_t *cam_data, const uin
     resize(im_therm_mirror, im_therm_scale, Size(im_cam.cols, im_cam.rows), 0, 0, INTER_LINEAR);
 
     Mat im_therm_border;
-    Rect cut(0, g_image.parallax_offset, 640, 480 - g_image.parallax_offset);
+    Rect cut(0, 0, g_image.cam_width, g_image.cam_height - g_image.parallax_offset);
     Mat im_therm_cut = im_therm_scale(cut);
-    copyMakeBorder(im_therm_cut, im_therm_border, 0, g_image.parallax_offset, 0, 0, BORDER_REPLICATE);
+    copyMakeBorder(im_therm_cut, im_therm_border, g_image.parallax_offset, 0, 0, 0, BORDER_REPLICATE);
     //im_therm_border = im_therm_scale;
 
     Mat im_fusion;
