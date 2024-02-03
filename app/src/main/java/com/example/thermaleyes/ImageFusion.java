@@ -210,8 +210,6 @@ public abstract class ImageFusion extends Thread {
 
     public void exit() {
         mThreadRun = false;
-        //mThermalQueue.notifyAll();
-        //mCameraQueue.notifyAll();
     }
 
     private void putImage(LinkedList<FrameInfo> queue, FrameInfo frame) {
@@ -223,11 +221,11 @@ public abstract class ImageFusion extends Thread {
     }
 
     private FrameInfo getImage(LinkedList<FrameInfo> queue) {
-        while (queue.size() == 0) {
+        while (queue.size() == 0 && mThreadRun) {
             try {
                 queue.wait();
             } catch (InterruptedException e) {
-                Log.e(TAG, "Camera Queue wait interrupt");
+                Log.e(TAG, "Queue wait interrupt");
             }
         }
 

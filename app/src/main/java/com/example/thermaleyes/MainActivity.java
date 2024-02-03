@@ -51,32 +51,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private NV21ToBitmap mNv21ToBitmap;
     private ParameterDialogFragment mControlsDialog;
     private boolean mIsCameraConnected = false;
-    private final ImageFusion mImageFusion = new ImageFusion(DEFAULT_WIDTH, DEFAULT_HEIGHT,
-            ThermalDevice.IMAGE_WIDTH, ThermalDevice.IMAGE_HEIGHT) {
-
-        @Override
-        public void onFrame(FrameInfo frame) {
-            Bitmap srcBm = mNv21ToBitmap.nv21ToBitmap(frame.data, DEFAULT_WIDTH, DEFAULT_HEIGHT);
-
-            DisplayMetrics dm = new DisplayMetrics();
-            getWindowManager().getDefaultDisplay().getMetrics(dm);
-            int screenWidth = dm.widthPixels;
-            float scaleTimes = (float)screenWidth / srcBm.getWidth();
-
-            Matrix matrix = new Matrix();
-            matrix.postScale(scaleTimes, scaleTimes);
-            Bitmap scaleBm = Bitmap.createBitmap(srcBm,
-                    0, 0, srcBm.getWidth(), srcBm.getHeight(), matrix, true);
-
-            drawTemptationTrack(scaleBm, frame);
-            mIsCameraConnected = true;
-
-            runOnUiThread(() -> {
-                mFusionImagePreview.setImageBitmap(scaleBm);
-                invalidateOptionsMenu();
-            });
-        }
-    };
+    private ImageFusion mImageFusion;
 
     private final ThermalDevice mThermalDevice = new ThermalDevice() {
         @Override
@@ -165,7 +140,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onStart() {
         super.onStart();
         initCameraHelper();
-        mImageFusion.start();
+        initThermalDevice();
     }
 
     @Override
@@ -175,12 +150,46 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mImageFusion.exit();
     }
 
-    public void initCameraHelper() {
+    private void initCameraHelper() {
         if (CAM_DISPLAY) Log.d(TAG, "initCameraHelper:");
         if (mCameraHelper == null) {
             mCameraHelper = new CameraHelper();
             mCameraHelper.setStateCallback(mStateListener);
         }
+    }
+
+    private void initThermalDevice() {
+        if (mImageFusion != null) {
+            return;
+        }
+
+        mImageFusion = new ImageFusion(DEFAULT_WIDTH, DEFAULT_HEIGHT,
+                ThermalDevice.IMAGE_WIDTH, ThermalDevice.IMAGE_HEIGHT) {
+
+            @Override
+            public void onFrame(FrameInfo frame) {
+                Bitmap srcBm = mNv21ToBitmap.nv21ToBitmap(frame.data, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+
+                DisplayMetrics dm = new DisplayMetrics();
+                getWindowManager().getDefaultDisplay().getMetrics(dm);
+                int screenWidth = dm.widthPixels;
+                float scaleTimes = (float)screenWidth / srcBm.getWidth();
+
+                Matrix matrix = new Matrix();
+                matrix.postScale(scaleTimes, scaleTimes);
+                Bitmap scaleBm = Bitmap.createBitmap(srcBm,
+                        0, 0, srcBm.getWidth(), srcBm.getHeight(), matrix, true);
+
+                drawTemptationTrack(scaleBm, frame);
+                mIsCameraConnected = true;
+
+                runOnUiThread(() -> {
+                    mFusionImagePreview.setImageBitmap(scaleBm);
+                    invalidateOptionsMenu();
+                });
+            }
+        };
+        mImageFusion.start();
     }
 
     private void clearCameraHelper() {
