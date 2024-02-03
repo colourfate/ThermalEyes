@@ -4,10 +4,14 @@
     <option name="filePathToZoomLevelMap">
       <map>
         <entry key="..\:/Workspace/Android/ThermalEyes/app/src/main/res/drawable-anydpi/ic_action_usb.xml" value="0.262" />
+        <entry key="..\:/Workspace/Android/ThermalEyes/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.24" />
+        <entry key="..\:/Workspace/Android/ThermalEyes/app/src/main/res/drawable/ic_launcher_background.xml" value="0.24" />
         <entry key="..\:/Workspace/Android/ThermalEyes/app/src/main/res/layout/activity_main.xml" value="0.264" />
         <entry key="..\:/Workspace/Android/ThermalEyes/app/src/main/res/layout/fragment_camera_controls.xml" value="0.22864583333333333" />
         <entry key="..\:/Workspace/Android/ThermalEyes/app/src/main/res/layout/fragment_paramter.xml" value="0.23333333333333334" />
         <entry key="..\:/Workspace/Android/ThermalEyes/app/src/main/res/menu/menu_main.xml" value="0.25677083333333334" />
+        <entry key="..\:/Workspace/Android/ThermalEyes/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" value="0.24" />
+        <entry key="..\:/Workspace/Android/ThermalEyes/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml" value="0.24" />
         <entry key="..\:/Workspace/Android/ThermalEyes/app2/src/main/res/drawable-anydpi/ic_action_control.xml" value="0.262" />
         <entry key="..\:/Workspace/Android/ThermalEyes/app2/src/main/res/drawable/ic_record_red_dot.xml" value="0.2875" />
         <entry key="..\:/Workspace/Android/ThermalEyes/app2/src/main/res/layout/activity_main.xml" value="0.26979166666666665" />
