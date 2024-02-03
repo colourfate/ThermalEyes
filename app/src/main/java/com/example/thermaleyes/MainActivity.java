@@ -158,11 +158,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mMaxTempTestView = findViewById(R.id.tvMaxTemperature);
         mMinTempTestView = findViewById(R.id.tvMinTemperature);
         mConnectTextView = findViewById(R.id.tvConnectHip);
-
-        Button btnOpenCamera = findViewById(R.id.btnOpenCamera);
-        btnOpenCamera.setOnClickListener(this);
-        Button btnCloseCamera = findViewById(R.id.btnCloseCamera);
-        btnCloseCamera.setOnClickListener(this);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -309,32 +304,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     };
 
     @Override
-    public void onClick(View v) {
-        if (v.getId() == R.id.btnOpenCamera) {
-            // select a uvc device
-            if (mCameraHelper != null) {
-                final List<UsbDevice> list = mCameraHelper.getDeviceList();
-                if (list != null && list.size() > 0) {
-                    mCameraHelper.selectDevice(list.get(0));
-                }
-            }
-
-            if (!mIsCameraConnected) {
-                try {
-                    mThermalDevice.connect();
-                } catch (IOException e) {
-                    Log.e(TAG, "Usb connect failed");
-                    return;
-                }
-                mThermalDevice.setFPS(ThermalDevice.FPS_8);
-            }
-        } else if (v.getId() == R.id.btnCloseCamera) {
-            // close camera
-            if (mCameraHelper != null) {
-                mCameraHelper.closeCamera();
-            }
-        }
-    }
+    public void onClick(View v) { }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
